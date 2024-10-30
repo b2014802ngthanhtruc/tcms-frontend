@@ -31,7 +31,7 @@ defineComponent({ name: 'AppSelectionLevel' })
 <template>
   <ul
     role="list"
-    class="max h-[342px] w-full space-y-2 self-start overflow-hidden overscroll-none rounded-lg shadow shadow-gray-400 first:rounded-t-lg last:rounded-b-lg hover:overflow-y-auto"
+    class="max h-[342px] w-full space-y-2 self-start overflow-hidden overscroll-none rounded-lg bg-white shadow shadow-gray-400 first:rounded-t-lg last:rounded-b-lg hover:overflow-y-auto"
   >
     <li
       v-if="localListValues.length > 0"

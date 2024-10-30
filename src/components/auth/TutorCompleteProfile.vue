@@ -521,6 +521,9 @@ const handleTutorCompleteProfile = async (values: any) => {
     registerValues.address.district = districts.value.find(
       (c) => c.id === registerValues.address.district
     )!.name
+    registerValues.address.ward = wards.value.find(
+      (c) => c.id === registerValues.address.ward
+    )!.name
     errors.value = {}
 
     if (selectedFile.value) {
@@ -987,7 +990,7 @@ defineComponent({ name: 'TutorCompleteProfile' })
                       v-for="ward in filteredWard"
                       as="template"
                       :key="ward.id"
-                      :value="ward.name"
+                      :value="ward.id"
                       v-slot="{ selected, active }"
                     >
                       <li

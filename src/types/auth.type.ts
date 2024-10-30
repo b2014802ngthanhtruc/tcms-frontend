@@ -60,6 +60,8 @@ export type TutorCompleteRegisterRequest = Pick<
   timeExpect: Pick<TimeExpect, 'time' | 'dow'>[]
 }
 
+export type TutorUpdateProfileRequest = Partial<Omit<TutorCompleteRegisterRequest, 'userId'>>
+
 export type ListStudentProfileItem = {
   id: string
   fullName: string

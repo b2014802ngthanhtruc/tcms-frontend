@@ -6,6 +6,10 @@ export const getAccessTokenFromLS = (): string => {
   return localStorage.getItem('accessToken') || ''
 }
 
+export const getRefreshTokenFromLS = (): string => {
+  return localStorage.getItem('refreshToken') || ''
+}
+
 export const checkIsLogin = (): boolean => {
   return localStorage.getItem('isLogin') === 'true'
 }

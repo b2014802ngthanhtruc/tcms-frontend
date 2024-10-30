@@ -28,7 +28,7 @@ export type Tutor = {
   address: Address
   educationalQualification: EducationalQuantity
   classes: ClassRoom[]
-  areExpect: AreExpect[]
+  areaExpect: AreExpect[]
   jobReference: JobReference[]
   timeExpect: TimeExpect[]
 

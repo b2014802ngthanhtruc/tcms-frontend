@@ -35,7 +35,7 @@ defineComponent({ name: 'AppListSelection' })
 <template>
   <ul
     role="list"
-    class="max h-full max-h-36 w-full space-y-2 overflow-hidden overscroll-none rounded-lg shadow shadow-gray-400 hover:overflow-y-auto"
+    class="max h-full max-h-36 w-full space-y-2 overflow-hidden overscroll-none rounded-lg bg-white shadow shadow-gray-400 hover:overflow-y-auto"
   >
     <li
       v-for="item in listValues"

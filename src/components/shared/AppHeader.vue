@@ -209,6 +209,10 @@ const handleStudentCreateProfile = async () => {
   router.push({ name: 'student-create-profile' })
 }
 
+const handleGotoProfile = () => {
+  router.push({ name: 'tutor-profile' })
+}
+
 watchEffect((isOpenModal) => {
   if (!isOpenModal) {
     step.value = 1
@@ -319,6 +323,7 @@ defineComponent({ name: 'AppHeader' })
                   <div class="px-1 py-1">
                     <MenuItem v-slot="{ active }">
                       <button
+                        @click="handleGotoProfile"
                         :class="[
                           active ? 'bg-sky-500 text-white' : 'text-gray-900',
                           'group flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm'

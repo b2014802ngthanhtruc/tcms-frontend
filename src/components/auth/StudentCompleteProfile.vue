@@ -164,10 +164,12 @@ const handleStudentCompleteProfile = (value: any) => {
   const userId = getUserIdFromLS()
   const city = cities.value.find((c) => c.id === selectedCityId.value)
   const district = districts.value.find((d) => d.id === selectedDistrictId.value)
+  const ward = wards.value.find((w) => w.id === selectedWardId.value)
 
-  if (city && district) {
+  if (city && district && ward) {
     studentRegisterData.address.city = city.name
     studentRegisterData.address.district = district.name
+    studentRegisterData.address.ward = ward.name
   }
   studentRegisterData.grade = GRADEMAP[studentRegisterData.class]
   studentRegisterData.userId = userId
@@ -656,14 +658,14 @@ defineComponent({ name: 'StudentCompleteProfile' })
             :validate-on-change="true"
             :validate-on-blur="true"
           >
-            <Combobox v-model="selectedWardId" v-bind="field" v-if="selectedDistrictId">
+            <Combobox v-bind="field" v-model="selectedWardId" v-if="selectedDistrictId">
               <div class="relative mt-1">
                 <div
                   class="relative w-full cursor-default overflow-hidden rounded-lg border border-gray-300 bg-white text-left shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm"
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(se) => selectedWard?.name || 'Select a ward'"
+                    :display-value="(w) => selectedWard?.name || 'Select a ward'"
                     @change="queryWardName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -680,7 +682,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                     class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm"
                   >
                     <div
-                      v-if="filteredDistrict.length === 0 && queryWardName !== ''"
+                      v-if="filteredWard.length === 0 && queryWardName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
                       Nothing found.
@@ -690,7 +692,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-for="ward in filteredWard"
                       as="template"
                       :key="ward.id"
-                      :value="ward.name"
+                      :value="ward.id"
                       v-slot="{ selected, active }"
                     >
                       <li
