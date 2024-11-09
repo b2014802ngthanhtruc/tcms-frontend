@@ -61,7 +61,7 @@ defineComponent({ name: 'StepFlow' })
             }"
             class="text-xl font-semibold"
           >
-            Register new account
+            Đăng ký tài khoản mới
           </span>
         </li>
 
@@ -93,7 +93,7 @@ defineComponent({ name: 'StepFlow' })
             }"
             class="text-lg"
           >
-            Verify account
+            Xác thực tài khoản
           </span>
         </li>
 
@@ -125,7 +125,7 @@ defineComponent({ name: 'StepFlow' })
             }"
             class="text-lg"
           >
-            Choose role
+            Chọn vai trò
           </span>
         </li>
 
@@ -157,7 +157,7 @@ defineComponent({ name: 'StepFlow' })
             }"
             class="text-lg"
           >
-            Complete profile
+            Hoàn thành đăng ký
           </span>
         </li>
 
@@ -189,7 +189,7 @@ defineComponent({ name: 'StepFlow' })
             }"
             class="text-lg"
           >
-            Welcome to Day Break Tutor Center
+            Chào mừng đến với Trung tâm gia sư Day Break
           </span>
         </li>
       </ul>

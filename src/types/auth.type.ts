@@ -51,13 +51,13 @@ export type TutorCompleteRegisterRequest = Pick<
   | 'expectSalary'
 > & {
   address: Pick<Address, 'address' | 'city' | 'country' | 'ward' | 'district'>
-  jobReference: (Pick<JobReference, 'class' | 'grade' | 'description'> & { subjects: string[] })[]
-  areaExpect: Pick<AreExpect, 'city' | 'district'>[]
+  jobReferences: (Pick<JobReference, 'class' | 'grade' | 'description'> & { subjects: string[] })[]
+  areaExpects: Pick<AreExpect, 'city' | 'districts'>[]
   educationalQualification: Pick<
     EducationalQuantity,
     'degree' | 'major' | 'university' | 'startYear' | 'endYear' | 'certificateUrl'
   >
-  timeExpect: Pick<TimeExpect, 'time' | 'dow'>[]
+  timeExpects: Pick<TimeExpect, 'sessions' | 'dow'>[]
 }
 
 export type TutorUpdateProfileRequest = Partial<Omit<TutorCompleteRegisterRequest, 'userId'>>

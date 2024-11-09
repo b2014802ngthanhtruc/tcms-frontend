@@ -28,9 +28,9 @@ export type Tutor = {
   address: Address
   educationalQualification: EducationalQuantity
   classes: ClassRoom[]
-  areaExpect: AreExpect[]
-  jobReference: JobReference[]
-  timeExpect: TimeExpect[]
+  areaExpects: AreExpect[]
+  jobReferences: JobReference[]
+  timeExpects: TimeExpect[]
 
   createdAt: Date
   updatedAt: Date | null
@@ -58,7 +58,7 @@ export type AreExpect = {
   tutorId: string
 
   city: string
-  district: string
+  districts: string[]
 
   createdAt: Date
   updatedAt: Date | null
@@ -84,10 +84,21 @@ export type TimeExpect = {
   id: string
   tutorId: string
 
-  time: string
+  sessions: string[]
   dow: string
 
   createdAt: Date
   updatedAt: Date | null
   deletedAt: Date | null
+}
+
+export type ListTutorResponse = {
+  id: string
+  fullName: string
+  gender: Gender
+  dob: Date
+  expectSalary: number
+  degree: string
+  major: string
+  university: string
 }

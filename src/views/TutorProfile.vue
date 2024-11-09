@@ -3,12 +3,35 @@ import TutorAvatar from '@/components/tutor/TutorAvatar.vue'
 import TutorForm from '@/components/tutor/TutorForm.vue'
 import { DEFAULT_AVATAR } from '@/constants/user.constant'
 import TutorService from '@/services/tutor/tutor.service'
+import type { TutorUpdateProfileRequest } from '@/types'
 import type { Tutor } from '@/types/tutor.type'
-import { computed, onBeforeMount, onMounted, ref } from 'vue'
+import { getUserLoginFromLS } from '@/utils'
+import type { AxiosError } from 'axios'
+import { computed, onBeforeMount, onMounted, ref, watch, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
 
 const tutorService = new TutorService()
 
 const tutor = ref<Tutor | null>(null)
+const user = computed(() => getUserLoginFromLS())
+const router = useRouter()
+
+const updateProfile = async (data: TutorUpdateProfileRequest) => {
+  try {
+    console.log('data', data)
+    await tutorService.updateProfile(data)
+    toast.success('Update profile successfully')
+    const result = await tutorService.getProfile()
+    console.log('Profile', result)
+    tutor.value = result
+  } catch (error) {
+    console.error('Failed to update profile:', error)
+    const err = error as AxiosError
+    const data: any = err.response?.data
+    toast.error(data.message)
+  }
+}
 
 onMounted(async () => {
   try {
@@ -18,6 +41,10 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to fetch profile:', error)
   }
+})
+
+watchEffect(async () => {
+  if (!user.value) router.push({ name: 'home' })
 })
 </script>
 <template>
@@ -33,8 +60,8 @@ onMounted(async () => {
         <a href="#" class="flex flex-auto rounded-lg p-2 hover:underline">Change password</a>
         <a href="#" class="flex flex-auto rounded-lg p-2 hover:underline">Logout</a>
       </div>
-      <div class="max-h-screen overflow-y-auto bg-white">
-        <TutorForm :profile="tutor!" v-if="tutor" />
+      <div class="max-h-screen overflow-hidden overflow-y-auto bg-white">
+        <TutorForm :profile="tutor" v-if="tutor" @tutor-update-profile="updateProfile" />
       </div>
     </div>
   </div>

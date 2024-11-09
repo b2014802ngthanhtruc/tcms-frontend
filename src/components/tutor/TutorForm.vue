@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as yup from 'yup'
-import { computed, defineComponent, onMounted, ref, watch } from 'vue'
+import { computed, defineComponent, onMounted, ref, watch, watchEffect } from 'vue'
 import { useForm, Field, Form, ErrorMessage } from 'vee-validate'
 import { yupResolver } from '@hookform/resolvers/yup'
 
@@ -31,7 +31,7 @@ import { getFileNameAndExtension, getUserIdFromLS } from '@/utils'
 import UploadService from '@/services/upload/upload.service'
 import AuthTutorService from '@/services/auth/auth-tutor.service'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { GRADEMAP } from '@/constants/class.constanst'
+import { GRADEMAP } from '@/constants/class.constant'
 import {
   Combobox,
   ComboboxInput,
@@ -47,6 +47,8 @@ import {
 } from '@headlessui/vue'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
 import type { Tutor } from '@/types/tutor.type'
+import VueDatePicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 // Variables
 const emits = defineEmits(['tutor-update-profile'])
 const addressService = new AddressService()
@@ -90,10 +92,7 @@ const TutorProfileSchema = yup.object({
     .trim()
     .min(2, 'First name must be at least 2 characters')
     .max(50, 'First name is too long')
-    .optional()
-    .test('is-valid-name', 'First name is invalid', (value) => {
-      console.log('valid name:', value)
-    }),
+    .optional(),
   lastName: yup
     .string()
     .trim()
@@ -111,10 +110,9 @@ const TutorProfileSchema = yup.object({
   gender: yup.string().trim().optional(),
   dob: yup
     .date()
-    .transform((value) => new Date(value))
     .optional()
     .test('is-valid-dob', 'Date of birth is invalid', (value) => {
-      console.log('valid dob:', value)
+      return value && value < new Date()
     }),
   identificationId: yup.string().trim().optional(),
   expectSalary: yup.number().min(0).optional(),
@@ -143,33 +141,40 @@ const TutorProfileSchema = yup.object({
       .mixed()
       .optional()
       .test('fileType', 'File must be an image (jpeg, jpg, png)', (value) => {
-        return (
-          (value as File) && ['image/jpeg', 'image/png', 'image/jpg'].includes((value as File).type)
-        )
+        console.log('file type:', value)
+        if (!value) return true
+        if (!props.profile.educationalQualification?.certificateUrl)
+          return (
+            (value as File) &&
+            ['image/jpeg', 'image/png', 'image/jpg'].includes((value as File).type)
+          )
+        return true
       })
       .test('fileSize', 'File size is too large. Maximum size is 2MB', (value) => {
-        return (value as File) && (value as File).size <= 2097152 // Giới hạn file 2MB
+        if (!props.profile.educationalQualification?.certificateUrl)
+          return (value as File) && (value as File).size <= 2097152 // Giới hạn file 2MB
+        return true
       })
   }),
-  areaExpect: yup
+  areaExpects: yup
     .array(
       yup.object({
         city: yup.string().required('City is required'),
-        district: yup.string().required('District is required')
+        districts: yup.array(yup.string()).required('District is required')
       })
     )
     .min(1)
     .optional(),
-  timeExpect: yup
+  timeExpects: yup
     .array(
       yup.object({
         dow: yup.string().required('Day of week is required'),
-        time: yup.string().required('Time is required')
+        sessions: yup.array(yup.string()).required('Time is required')
       })
     )
     .min(1)
     .optional(),
-  jobReference: yup
+  jobReferences: yup
     .array(
       yup.object({
         class: yup.string().required('Class is required'),
@@ -179,40 +184,24 @@ const TutorProfileSchema = yup.object({
     .min(1)
     .optional()
 })
-
-const { handleSubmit, values, setValues } = useForm({
-  validationSchema: TutorProfileSchema,
-  initialValues: {
-    firstName: props.profile.firstName,
-    lastName: props.profile.lastName,
-    phone: props.profile.phone,
-    gender: props.profile.gender,
-    dob: props.profile.dob,
-    identificationId: props.profile.identificationId,
-    expectSalary: props.profile.expectSalary || 0,
-    description: props.profile.description,
-    address: {
-      address: props.profile.address?.address,
-      city: props.profile.address?.city,
-      district: props.profile.address?.district,
-      ward: props.profile.address?.ward
-    },
-    educationalQualification: {
-      degree: props.profile.educationalQualification?.degree,
-      major: props.profile.educationalQualification?.major,
-      university: props.profile.educationalQualification?.university,
-      startYear: props.profile.educationalQualification?.startYear,
-      endYear: props.profile.educationalQualification?.endYear,
-      certificateUrl: props.profile.educationalQualification?.certificateUrl
-    }
-  } // Đặt ban đầu rỗng
-})
-
 // Sử dụng watch để theo dõi props.profile và cập nhật giá trị ban đầu khi có dữ liệu
 
 // Address for personal
 const cities = ref<CityResponse[]>([])
-const selectedCityId = ref<string>('')
+const selectedCityId = computed<string>({
+  get: () => {
+    if (tutorProfile.value.address.city) {
+      const city = cities.value.find((c) => c.name === tutorProfile.value.address.city)
+      if (city) {
+        return city.id
+      }
+    }
+    return ''
+  },
+  set: (value) => {
+    return value
+  }
+})
 const selectedCity = computed<CityResponse>(
   () => cities.value.find((c) => c.id === selectedCityId.value)!
 )
@@ -238,7 +227,20 @@ const districts = computed<District[]>(() => {
   return items
 })
 
-const selectedDistrictId = ref<string>('')
+const selectedDistrictId = computed<string>({
+  get: () => {
+    if (tutorProfile.value.address.district) {
+      const district = districts.value.find((d) => d.name === tutorProfile.value.address.district)
+      if (district) {
+        return district.id
+      }
+    }
+    return ''
+  },
+  set: (value) => {
+    return value
+  }
+})
 const selectedDistrict = computed<District>(
   () => districts.value.find((c) => c.id === selectedDistrictId.value)!
 )
@@ -276,7 +278,20 @@ const filteredWard = computed<Ward[]>(() => {
         )
   return result
 })
-const selectedWardId = ref<string>('')
+const selectedWardId = computed<string>({
+  get: () => {
+    if (tutorProfile.value.address.ward) {
+      const ward = wards.value.find((d) => d.name === tutorProfile.value.address.ward)
+      if (ward) {
+        return ward.id
+      }
+    }
+    return ''
+  },
+  set: (value) => {
+    return value
+  }
+})
 const selectedWard = computed<Ward>(() => wards.value.find((c) => c.id === selectedWardId.value)!)
 
 const selectedCities = ref<string[]>([])
@@ -324,6 +339,7 @@ const handleRemoveExpectCity = (id: string) => {
 }
 
 const handleRemoveExpectDistrict = (cityId: string, id: string) => {
+  console.log('handleRemoveExpectDistrict', cityId, id)
   const removeDistrict = selectedDistricts.value.findIndex((d) => d === id)
   if (removeDistrict > -1) {
     selectedDistricts.value.splice(removeDistrict, 1)
@@ -552,117 +568,186 @@ const handleFileChange = (event: Event) => {
     selectedFile.value = file // Lưu file vào biến selectedFile
   }
 }
+const format = (date: Date) => {
+  const day = date.getDate()
+  const month = date.getMonth() + 1
+  const year = date.getFullYear()
+
+  return `${day}/${month}/${year}`
+}
 // Methods
-const handleUpdateProfile = () =>
-  handleSubmit(async (values) => {
-    const updatedTutor = values as TutorUpdateProfileRequest
-    console.log('Form Submitted: ', updatedTutor)
+const handleUpdateProfile = async (values: any) => {
+  const updatedTutor = values as TutorUpdateProfileRequest
+  console.log('Form Submitted: ', updatedTutor)
 
-    updatedTutor.areaExpect = listViewAddressSelections.value.flatMap((item) => {
-      return item.level2!.map((itemLv2) => {
-        return {
-          city: item.name,
-          district: itemLv2.name
-        }
-      })
+  updatedTutor.areaExpects = listViewAddressSelections.value.map((item) => ({
+    city: item.name,
+    districts: item.level2!.map((itemLv2) => itemLv2.name)
+  }))
+  updatedTutor.timeExpects = selectedSchedules.value.map((item) => ({
+    dow: item.name,
+    sessions: item.level2!.map((itemLv2) => itemLv2.name)
+  }))
+  updatedTutor.jobReferences = listViewSelectionSubjects.value.flatMap((item) => {
+    return item.level2!.map((itemLv2) => {
+      return {
+        grade: item.name,
+        class: itemLv2.name,
+        description: '', // Thêm giá trị mô tả nếu cần
+        subjects: itemLv2.level3!.map((itemLv3) => itemLv3.id) // Đổi tên thuộc tính từ `subject` thành `subjects`
+      }
     })
-    updatedTutor.timeExpect = selectedSchedules.value.flatMap((item) => {
-      return item.level2!.map((itemLv2) => {
-        return {
-          dow: item.name,
-          time: itemLv2.name
-        }
-      })
-    })
-    updatedTutor.jobReference = listViewSelectionSubjects.value.flatMap((item) => {
-      return item.level2!.map((itemLv2) => {
-        return {
-          grade: item.name,
-          class: itemLv2.name,
-          description: '', // Thêm giá trị mô tả nếu cần
-          subjects: itemLv2.level3!.map((itemLv3) => itemLv3.id) // Đổi tên thuộc tính từ `subject` thành `subjects`
-        }
-      })
-    })
-
-    try {
-      console.log('updatedTutor', updatedTutor)
-      await TutorProfileSchema.validate(updatedTutor, { abortEarly: false })
-
-      console.log(
-        'startYear',
-        updatedTutor.educationalQualification?.startYear,
-        'endYear',
-        updatedTutor.educationalQualification?.endYear
-      )
-      if (updatedTutor.educationalQualification) {
-        const startYear = new Date(updatedTutor.educationalQualification.startYear)
-        const endYear = new Date(updatedTutor.educationalQualification.endYear)
-        updatedTutor.educationalQualification.startYear = startYear.getFullYear().toString()
-        updatedTutor.educationalQualification.endYear = endYear.getFullYear().toString()
-      }
-
-      if (updatedTutor.address !== undefined) {
-        const { address } = updatedTutor
-        const updateCity = cities.value.find((c) => c.id === address.city)
-        const updateDistrict = districts.value.find((c) => c.id === address.district)
-        updatedTutor.address = {
-          ...updatedTutor.address,
-          city: updateCity ? updateCity.name : tutorProfile.value.address.city,
-          district: updateDistrict ? updateDistrict.name : tutorProfile.value.address.district
-        }
-      }
-
-      errors.value = {}
-
-      if (selectedFile.value) {
-        const uploadFileRequest = getFileNameAndExtension(selectedFile.value)
-        console.log('uploadFileRequest', uploadFileRequest)
-        const presignedUrl = await uploadService.presignUrl(
-          uploadFileRequest.fileName,
-          uploadFileRequest.fileType
-        )
-        await uploadService.uploadFile(presignedUrl.url, selectedFile.value)
-        selectedFile.value = null
-        fileKey.value = presignedUrl.key
-      }
-      updatedTutor.educationalQualification = {
-        degree: updatedTutor.educationalQualification
-          ? updatedTutor.educationalQualification.degree
-          : tutorProfile.value.educationalQualification.degree,
-        major: updatedTutor.educationalQualification
-          ? updatedTutor.educationalQualification.major
-          : tutorProfile.value.educationalQualification.major,
-        university: updatedTutor.educationalQualification
-          ? updatedTutor.educationalQualification.university
-          : tutorProfile.value.educationalQualification.university,
-        startYear: updatedTutor.educationalQualification
-          ? updatedTutor.educationalQualification.startYear
-          : tutorProfile.value.educationalQualification.startYear,
-        endYear: updatedTutor.educationalQualification
-          ? updatedTutor.educationalQualification.endYear
-          : tutorProfile.value.educationalQualification.endYear,
-        certificateUrl: fileKey.value
-      }
-
-      emits('tutor-update-profile', updatedTutor)
-    } catch (validationError: any) {
-      console.log('validationError', validationError)
-      const errorMessage: Record<string, string> = {}
-      validationError.inner.forEach((err: { path: string; message: string }) => {
-        errorMessage[err.path] = err.message
-      })
-      errors.value = errorMessage
-      console.log('errors', errors.value)
-    }
   })
+
+  try {
+    console.log('updatedTutor', updatedTutor)
+    await TutorProfileSchema.validate(updatedTutor, { abortEarly: false })
+
+    console.log(
+      'startYear',
+      updatedTutor.educationalQualification?.startYear,
+      'endYear',
+      updatedTutor.educationalQualification?.endYear
+    )
+    if (updatedTutor.educationalQualification) {
+      const startYear = new Date(updatedTutor.educationalQualification.startYear)
+      const endYear = new Date(updatedTutor.educationalQualification.endYear)
+      updatedTutor.educationalQualification.startYear = startYear.getFullYear().toString()
+      updatedTutor.educationalQualification.endYear = endYear.getFullYear().toString()
+    }
+
+    if (updatedTutor.address !== undefined) {
+      const { address } = updatedTutor
+      const updateCity = cities.value.find((c) => c.id === address.city)
+      const updateDistrict = districts.value.find((c) => c.id === address.district)
+      const updatedWard = wards.value.find((w) => w.id === address.ward)
+      updatedTutor.address = {
+        ...updatedTutor.address,
+        city: updateCity ? updateCity.name : tutorProfile.value.address.city,
+        district: updateDistrict ? updateDistrict.name : tutorProfile.value.address.district,
+        ward: updatedWard ? updatedWard.name : tutorProfile.value.address.ward
+      }
+    }
+
+    errors.value = {}
+
+    if (selectedFile.value) {
+      const uploadFileRequest = getFileNameAndExtension(selectedFile.value)
+      console.log('uploadFileRequest', uploadFileRequest)
+      const presignedUrl = await uploadService.presignUrl(
+        uploadFileRequest.fileName,
+        uploadFileRequest.fileType
+      )
+      await uploadService.uploadFile(presignedUrl.url, selectedFile.value)
+      selectedFile.value = null
+      fileKey.value = presignedUrl.key
+    }
+    console.log('fileKey', fileKey.value)
+    console.log('profile url: ', tutorProfile.value.educationalQualification.certificateUrl)
+    updatedTutor.educationalQualification = {
+      degree: updatedTutor.educationalQualification
+        ? updatedTutor.educationalQualification.degree
+        : tutorProfile.value.educationalQualification.degree,
+      major: updatedTutor.educationalQualification
+        ? updatedTutor.educationalQualification.major
+        : tutorProfile.value.educationalQualification.major,
+      university: updatedTutor.educationalQualification
+        ? updatedTutor.educationalQualification.university
+        : tutorProfile.value.educationalQualification.university,
+      startYear: updatedTutor.educationalQualification
+        ? updatedTutor.educationalQualification.startYear
+        : tutorProfile.value.educationalQualification.startYear,
+      endYear: updatedTutor.educationalQualification
+        ? updatedTutor.educationalQualification.endYear
+        : tutorProfile.value.educationalQualification.endYear,
+      certificateUrl:
+        fileKey.value.length > 0
+          ? fileKey.value
+          : tutorProfile.value.educationalQualification.certificateUrl
+    }
+    console.log('before emit: ', updatedTutor)
+
+    emits('tutor-update-profile', updatedTutor)
+  } catch (validationError: any) {
+    console.log('validationError', validationError)
+    const errorMessage: Record<string, string> = {}
+    validationError.inner.forEach((err: { path: string; message: string }) => {
+      errorMessage[err.path] = err.message
+    })
+    errors.value = errorMessage
+    console.log('errors', errors.value)
+  }
+}
 
 onMounted(async () => {
   cities.value = await addressService.listCities()
   const result = await subjectService.findAll()
   subjects.value = result.results
-  console.log('subjects', subjects.value)
+
+  props.profile.areaExpects.map((item) => {
+    const city = cities.value.find((c) => c.name === item.city)
+    console.log('item', item)
+    console.log('city', city)
+    if (city) {
+      selectedCities.value.push(city.id)
+      listViewAddressSelections.value.push({
+        id: city.id,
+        name: city.name,
+        level2: item.districts.map((d) => {
+          const district = city.districts.find((c) => c.name === d)
+          console.log('district', district)
+          if (district) return { id: district.id, name: district.name }
+          return { id: '', name: '' }
+        })
+      })
+      if (expectCity.value === '') expectCity.value = city.id
+      item.districts.map((district) => {
+        const districtId = city.districts.find((d) => d.name === district)
+        console.log('district', district)
+        console.log('districtId', districtId)
+        if (districtId) selectedDistricts.value.push(districtId!.id)
+      })
+    }
+  })
+
+  props.profile.timeExpects.map((item) => {
+    selectedSchedules.value.push({
+      id: item.dow,
+      name: item.dow,
+      level2: item.sessions.map((s) => ({ id: s, name: s }))
+    })
+  })
+
+  props.profile.jobReferences.map((item) => {
+    const existedGrade = listViewSelectionSubjects.value.findIndex((d) => d.id === item.grade)
+    if (existedGrade < 0)
+      listViewSelectionSubjects.value.push({
+        id: item.grade,
+        name: item.grade,
+        level2: [
+          {
+            id: item.class,
+            name: item.class,
+            level3: item.subjects.map((s) => ({ id: s.id, name: s.name }))
+          }
+        ]
+      })
+    else
+      listViewSelectionSubjects.value[existedGrade].level2!.push({
+        id: item.class,
+        name: item.class,
+        level3: item.subjects.map((s) => ({ id: s.id, name: s.name }))
+      })
+    item.subjects.map((subject) => {
+      const existedSubject = selectedSubjects.value.findIndex((d) => d === subject.id)
+      if (existedSubject < 0) selectedSubjects.value.push(subject.id)
+    })
+  })
   console.log('tutorProfile', props.profile)
+})
+
+watchEffect(() => {
+  console.log('watch tutorProfile', tutorProfile.value)
 })
 defineComponent({ name: 'TutorForm' })
 </script>
@@ -670,12 +755,11 @@ defineComponent({ name: 'TutorForm' })
   <Form
     @submit="handleUpdateProfile"
     :validation-schema="TutorProfileSchema"
-    :validate-on-mount="false"
     :initial-values="tutorProfile"
-    class="grid max-h-full w-full grid-flow-row-dense content-around justify-center justify-self-center overflow-y-scroll px-28 py-6 shadow-lg shadow-gray-400"
+    class="grid max-h-full w-full grid-flow-row-dense content-around justify-center justify-self-center overflow-hidden overflow-y-scroll px-28 py-6 shadow-lg shadow-gray-400"
   >
     <div class="form-header">
-      <h1>Complete Profile</h1>
+      <h1>Profile</h1>
     </div>
     <!-- Personal information -->
     <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
@@ -689,7 +773,6 @@ defineComponent({ name: 'TutorForm' })
           <label for="" class="form-label">First Name</label>
           <Field name="firstName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
-              v-model="field.value"
               v-bind="field"
               type="text"
               :class="[
@@ -727,9 +810,7 @@ defineComponent({ name: 'TutorForm' })
         <div class="form-field">
           <label for="" class="form-label">Phone</label>
           <Field name="phone" v-slot="{ field, meta }">
-            <vue-tel-input v-model="tutorProfile.phone" v-bind="field">{{
-              field.value
-            }}</vue-tel-input>
+            <vue-tel-input v-model="field.value" v-bind="field">{{ field.value }}</vue-tel-input>
           </Field>
           <ErrorMessage name="phone" class="text-sm text-red-500" />
         </div>
@@ -737,18 +818,13 @@ defineComponent({ name: 'TutorForm' })
         <div class="form-field">
           <label for="dob" class="form-label">Date of Birth</label>
           <Field name="dob" v-slot="{ field, meta }" :validate-on-input="true">
-            <input
+            <VueDatePicker
+              mode="date"
+              v-model="field.value"
               v-bind="field"
-              v-model="tutorProfile.dob"
-              type="date"
-              :class="[
-                'form-input',
-                meta.valid && meta.touched
-                  ? 'border-green-500 focus:caret-inherit'
-                  : 'border-gray-300',
-                !meta.valid && meta.touched ? 'border-red-500' : ''
-              ]"
-              placeholder="Date of Birth"
+              :format="format"
+              :enable-time-picker="false"
+              :auto-apply="true"
             />
           </Field>
           <ErrorMessage name="dob" class="text-sm text-red-500" />
@@ -1103,7 +1179,7 @@ defineComponent({ name: 'TutorForm' })
                       v-for="ward in filteredWard"
                       as="template"
                       :key="ward.id"
-                      :value="ward.name"
+                      :value="ward.id"
                       v-slot="{ selected, active }"
                     >
                       <li
@@ -1242,17 +1318,13 @@ defineComponent({ name: 'TutorForm' })
             v-slot="{ field, meta }"
             :validate-on-input="true"
           >
-            <input
+            <VueDatePicker
+              mode="date"
+              year-picker
+              v-model="field.value"
               v-bind="field"
-              type="date"
-              :class="[
-                'form-input',
-                meta.valid && meta.touched
-                  ? 'border-green-500 focus:caret-inherit'
-                  : 'border-gray-300',
-                !meta.valid && meta.touched ? 'border-red-500' : ''
-              ]"
-              placeholder="Start Year"
+              :enable-time-picker="false"
+              :auto-apply="true"
             />
           </Field>
           <ErrorMessage name="educationalQualification.startYear" class="text-sm text-red-500" />
@@ -1265,17 +1337,13 @@ defineComponent({ name: 'TutorForm' })
             v-slot="{ field, meta }"
             :validate-on-input="true"
           >
-            <input
+            <VueDatePicker
+              mode="date"
+              year-picker
+              v-model="field.value"
               v-bind="field"
-              type="date"
-              :class="[
-                'form-input',
-                meta.valid && meta.touched
-                  ? 'border-green-500 focus:caret-inherit'
-                  : 'border-gray-300',
-                !meta.valid && meta.touched ? 'border-red-500' : ''
-              ]"
-              placeholder="End Year"
+              :enable-time-picker="false"
+              :auto-apply="true"
             />
           </Field>
           <ErrorMessage name="educationalQualification.endYear" class="text-sm text-red-500" />
@@ -1356,6 +1424,9 @@ defineComponent({ name: 'TutorForm' })
             />
           </div>
         </div>
+        <!-- <span v-if="errors.areaExpect" class="text-sm text-red-500">{{
+          errors.areaExpect[0]
+        }}</span> -->
       </div>
       <!-- Expected Schedules -->
       <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">

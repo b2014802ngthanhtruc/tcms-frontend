@@ -19,6 +19,7 @@ export type ListFilterField = {
   oneColumn: FilterKey[]
   twoColumn: FilterKey[]
   threeColumn: FilterKey[]
+  queryFilter: FilterField[]
 }
 
 const props = defineProps<{
@@ -27,7 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['filter', 'closeTab'])
 
-const filterValues = ref<FilterField[]>([])
+const filterValues = ref<FilterField[]>(props.filterFields.queryFilter)
 
 const hanldeCloseTab = () => {
   emit('closeTab')
@@ -56,7 +57,7 @@ defineComponent({ name: 'AppFilterTab' })
 <template>
   <div class="filter-tab">
     <div class="filter-tab-header">
-      <h2>Options</h2>
+      <h2>Các lựa chọn</h2>
       <button @click="hanldeCloseTab">
         <font-awesome-icon :icon="['fas', 'xmark']" size="lg" style="color: #000000" />
       </button>

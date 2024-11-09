@@ -23,7 +23,8 @@ import {
   ListboxOption
 } from '@headlessui/vue'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
-import { GRADEMAP } from '@/constants/class.constanst'
+import { CLASSLEVELMAP, GRADEMAP } from '@/constants/class.constant'
+import { GENDERMAP } from '@/constants/gender.constant'
 
 const addressService = new AddressService()
 const props = defineProps<{
@@ -204,7 +205,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
       <div class="grid grid-cols-2 gap-5">
         <!-- Firstname -->
         <div class="form-field">
-          <label for="firstName" class="form-label">First Name</label>
+          <label for="firstName" class="form-label">Tên</label>
           <Field name="firstName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -216,14 +217,14 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="First name"
+              placeholder="Tên"
             />
           </Field>
           <ErrorMessage name="firstName" class="text-sm text-red-500" />
         </div>
         <!-- Lastname -->
         <div class="form-field">
-          <label for="lastName" class="form-label">Last Name</label>
+          <label for="lastName" class="form-label">Họ</label>
           <Field name="lastName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -235,14 +236,14 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Last name"
+              placeholder="Họ"
             />
           </Field>
           <ErrorMessage name="lastName" class="text-sm text-red-500" />
         </div>
         <!-- Phone -->
         <div class="form-field">
-          <label for="phone" class="form-label">Phone</label>
+          <label for="phone" class="form-label">Số điện thoại</label>
           <Field name="phone" v-slot="{ field, meta }" :validate-on-input="true">
             <vue-tel-input v-bind="field"></vue-tel-input>
           </Field>
@@ -250,7 +251,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
         </div>
         <!-- Date of birth -->
         <div class="form-field">
-          <label for="" class="form-label">Date of Birth</label>
+          <label for="" class="form-label">Ngày sinh</label>
           <Field name="dob" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -262,14 +263,14 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Date of Birth"
+              placeholder="Ngày sinh"
             />
           </Field>
           <ErrorMessage name="dob" class="text-sm text-red-500" />
         </div>
         <!-- Parent name -->
         <div class="form-field">
-          <label for="parentName" class="form-label">Parent name</label>
+          <label for="parentName" class="form-label">Họ tên phụ huynh</label>
           <Field name="parentName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -281,14 +282,14 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Parent name"
+              placeholder="Họ tên phụ huynh"
             />
           </Field>
           <ErrorMessage name="parentName" class="text-sm text-red-500" />
         </div>
         <!-- Gender -->
         <div class="form-field">
-          <label for="gender" class="form-label"> Select Gender </label>
+          <label for="gender" class="form-label"> Giới tính </label>
           <Field name="gender" v-slot="{ field, meta }" :validate-on-input="true">
             <Listbox v-bind="field">
               <div class="relative mt-1">
@@ -296,7 +297,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm"
                 >
                   <span class="block truncate capitalize">{{
-                    field.value ?? 'Select a gender'
+                    field.value ?? 'Chọn giới tính'
                   }}</span>
                   <span
                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
@@ -327,7 +328,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.MALE }}</span
+                          >{{ GENDERMAP[Gender.MALE] }}</span
                         >
                         <span
                           v-if="selected"
@@ -352,7 +353,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.FEMALE }}</span
+                          >{{ GENDERMAP[Gender.FEMALE] }}</span
                         >
                         <span
                           v-if="selected"
@@ -377,7 +378,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.OTHER }}</span
+                          >{{ GENDERMAP[Gender.OTHER] }}</span
                         >
                         <span
                           v-if="selected"
@@ -413,7 +414,9 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm capitalize leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(classLevel) => toNormalize(field.value) ?? 'Select a class'"
+                    :display-value="
+                      (classLevel) => toNormalize(CLASSLEVELMAP[field.value]) ?? 'Chọn một lớp'
+                    "
                     @change="queryClassLevel = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -433,7 +436,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredClassLevel.length === 0 && queryClassLevel !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy
                     </div>
 
                     <ComboboxOption
@@ -454,7 +457,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                           class="block truncate capitalize"
                           :class="{ 'font-medium': selected, 'font-normal': !selected }"
                         >
-                          {{ toNormalize(classLevel) }}
+                          {{ toNormalize(CLASSLEVELMAP[classLevel]) }}
                         </span>
                         <span
                           v-if="selected"
@@ -476,7 +479,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
       <div class="grid grid-cols-1">
         <!-- Address (Street) -->
         <div class="form-field">
-          <label for="" class="form-label">Address</label>
+          <label for="" class="form-label">Địa chỉ</label>
           <Field name="address.address" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -488,7 +491,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Address"
+              placeholder="Địa chỉ"
             />
           </Field>
           <ErrorMessage name="address.address" class="text-sm text-red-500" />
@@ -497,7 +500,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
       <div class="grid grid-cols-3 gap-5">
         <!-- City -->
         <div class="form-field">
-          <label class="form-label">City</label>
+          <label class="form-label">Tỉnh/Thành phố</label>
           <Field
             name="address.city"
             v-slot="{ field, meta }"
@@ -532,7 +535,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredCity.length === 0 && queryCityName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy
                     </div>
 
                     <ComboboxOption
@@ -573,7 +576,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
         </div>
         <!-- District -->
         <div class="form-field">
-          <label for="" class="form-label">District</label>
+          <label for="" class="form-label">Quận/Huyện</label>
           <Field
             name="address.district"
             v-slot="{ field, meta }"
@@ -608,7 +611,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredDistrict.length === 0 && queryDistrictName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy
                     </div>
 
                     <ComboboxOption
@@ -644,13 +647,13 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Please select a city</p>
+            <p v-else>Vui lòng chọn Tỉnh/Thành phố trước</p>
           </Field>
           <ErrorMessage name="address.district" class="text-sm text-red-500" />
         </div>
         <!-- Ward -->
         <div class="form-field">
-          <label for="" class="form-label">Ward</label>
+          <label for="" class="form-label">Xã/Phường</label>
           <Field
             name="address.ward"
             v-slot="{ field, meta }"
@@ -685,7 +688,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredWard.length === 0 && queryWardName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy
                     </div>
 
                     <ComboboxOption
@@ -721,7 +724,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Please select a district</p>
+            <p v-else>Vui lòng chọn Quận/Huyện trước</p>
           </Field>
           <ErrorMessage name="address.ward" class="text-sm text-red-500" />
         </div>
@@ -731,7 +734,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
           <AppButton
             :status="ButtonStatus.SUCCESS"
             :type="ButtonType.FULL_FILL"
-            :content="'Next'"
+            :content="'Tiếp tục'"
           />
         </div>
       </div>

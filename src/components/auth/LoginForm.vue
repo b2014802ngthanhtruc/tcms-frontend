@@ -40,7 +40,7 @@ defineComponent({ name: 'LoginForm' })
       <div class="mt-[19px] flex justify-center">
         <img :src="logo" alt="Logo" class="w-[200px]" />
       </div>
-      <div class="mt-[10px] text-center text-[40px] font-semibold">Login</div>
+      <div class="mt-[10px] text-center text-[40px] font-semibold">Đăng nhập</div>
       <Form
         :validation-schema="loginSchema"
         @submit="login"
@@ -59,7 +59,7 @@ defineComponent({ name: 'LoginForm' })
           </Field>
         </div>
         <div class="grid w-full grid-flow-row-dense gap-4">
-          <label for="password" class="block text-[20px]">Password</label>
+          <label for="password" class="block text-[20px]">Mật khẩu</label>
           <Field name="password" v-slot="{ field, meta }" :validate-on-input="true" class="w-full">
             <input
               v-bind="field"
@@ -72,17 +72,11 @@ defineComponent({ name: 'LoginForm' })
         </div>
 
         <div class="mt-2 flex w-full items-center justify-between">
-          <a @click="forgotPassword" href="#" class="text-[13px]">Forgot password</a>
-          <RouterLink to="/auth/general/register" class="text-[13px] underline"
-            >Register</RouterLink
-          >
+          <a @click="forgotPassword" href="#" class="text-[13px]">Quên mật khẩu</a>
+          <RouterLink to="/auth/general/register" class="text-[13px] underline">Đăng ký</RouterLink>
         </div>
         <div class="flex w-full items-center justify-between py-8">
-          <AppButton
-            :status="ButtonStatus.SUCCESS"
-            :type="ButtonType.FULL_FILL"
-            :content="'Submit'"
-          />
+          <AppButton :status="ButtonStatus.SUCCESS" :type="ButtonType.FULL_FILL" :content="'Gửi'" />
         </div>
       </Form>
     </div>

@@ -69,15 +69,24 @@ function resendCode() {
   emit('resend-code')
 }
 
-const handleResetPassword = (values: any) => {
+const handleResetPassword = async (values: any) => {
   const code = codeArray.value as string[]
   const resultCode = code.join('')
   console.log('verify code: ', code)
   console.log('verify code: ', resultCode)
   resetPasswordData.value.code = resultCode
   resetPasswordData.value.password = values.password
-  console.log('reset-password', resetPasswordData.value)
-  emit('submit-code', resetPasswordData.value)
+
+  try {
+    const isValid = await ResetPasswordSchema.validate(resetPasswordData.value)
+    if (isValid) {
+      console.log('reset-password', resetPasswordData.value)
+      emit('submit-code', resetPasswordData.value)
+    }
+  } catch (validationError) {
+    console.log(validationError)
+    errorMessage.value = (validationError as any).message
+  }
 }
 
 function focusNext(event: Event, index: number) {
@@ -130,10 +139,10 @@ defineComponent({ name: 'VerifyEmail' })
         <img :src="logo" alt="Logo" class="w-[200px]" />
       </div>
       <!-- Title -->
-      <h2 class="mb-6 text-center text-3xl font-bold text-black">Reset Password</h2>
+      <h2 class="mb-6 text-center text-3xl font-bold text-black">Đặt lại mật khẩu</h2>
 
       <!-- Subtitle -->
-      <p class="mb-6 text-center text-gray-500">Please enter the reset password code</p>
+      <p class="mb-6 text-center text-gray-500">Vui lòng nhập mã xác thực</p>
 
       <!-- Form -->
       <Form
@@ -171,7 +180,7 @@ defineComponent({ name: 'VerifyEmail' })
             <span class="text-red-500" v-if="errors">{{ errorMessage }}</span>
           </div>
           <div class="grid w-full grid-flow-row-dense justify-items-start gap-3 px-3">
-            <label for="password" class="text-[20px]">New password</label>
+            <label for="password" class="text-[20px]">Mật khẩu mới</label>
             <Field
               v-slot="{ field, meta }"
               :validate-on-input="true"
@@ -191,13 +200,13 @@ defineComponent({ name: 'VerifyEmail' })
 
         <!-- Resend Code Link -->
         <div class="mb-6 text-center">
-          <p class="text-gray-500">Can’t receive code?</p>
+          <p class="text-gray-500">Không nhận được email?</p>
           <button
             type="button"
             @click="resendCode"
             class="mt-2 text-blue-500 hover:underline focus:outline-none"
           >
-            Resend code
+            Gửi lại mã
           </button>
         </div>
 
@@ -207,7 +216,7 @@ defineComponent({ name: 'VerifyEmail' })
             <AppButton
               :status="ButtonStatus.SUCCESS"
               :type="ButtonType.FULL_FILL"
-              :content="'Next'"
+              :content="'Gửi'"
             />
           </div>
         </div>

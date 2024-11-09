@@ -8,6 +8,7 @@ export const AUTH_STUDENT_API = import.meta.env.VITE_API_AUTH_STUDENT
 // GENERAL
 export const GENERAL_SUBJECT_API = import.meta.env.VITE_API_GENERAL_SUBJECT
 export const GENERAL_CLASSROOM_API = import.meta.env.VITE_API_GENERAL_CLASSROOM
+export const GENERAL_TUTOR_API = import.meta.env.VITE_API_GENERAL_TUTOR
 export const UPLOAD_API = import.meta.env.VITE_API_UPLOAD
 
 //MODULE

@@ -80,7 +80,7 @@ class Http {
             } catch (refreshError) {
               this.isRefreshing = false
               clearLS()
-              window.location.href = '/login'
+              window.location.href = '/'
               return Promise.reject(refreshError)
             }
           }

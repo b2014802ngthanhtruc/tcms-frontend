@@ -56,7 +56,7 @@ defineComponent({ name: 'RegisterForm' })
                 : 'border-gray-300',
               !meta.valid && meta.touched ? 'border-red-500' : ''
             ]"
-            placeholder="Enter your email"
+            placeholder="Nhập email của bạn"
           />
         </Field>
         <ErrorMessage name="email" class="text-sm text-red-500" />
@@ -64,7 +64,7 @@ defineComponent({ name: 'RegisterForm' })
 
       <!-- Password Field -->
       <div class="form-field">
-        <label for="password" class="form-label">Password</label>
+        <label for="password" class="form-label">Mật khẩu</label>
         <Field name="password" id="password" v-slot="{ field, meta }" :validate-on-input="true">
           <input
             v-bind="field"
@@ -74,7 +74,7 @@ defineComponent({ name: 'RegisterForm' })
               meta.valid && meta.touched ? 'border-green-500' : 'border-gray-300',
               !meta.valid && meta.touched ? 'border-red-500' : ''
             ]"
-            placeholder="Enter your password"
+            placeholder="Nhập mật khẩu của bạn"
           />
         </Field>
         <ErrorMessage name="password" class="text-sm text-red-500" />
@@ -97,7 +97,7 @@ defineComponent({ name: 'RegisterForm' })
               meta.valid && meta.touched ? 'border-green-500' : 'border-gray-300',
               !meta.valid && meta.touched ? 'border-red-500' : ''
             ]"
-            placeholder="Confirm your password"
+            placeholder="Nhập lại mật khẩu"
           />
         </Field>
         <ErrorMessage name="confirmPassword" class="text-sm text-red-500" />
@@ -112,7 +112,7 @@ defineComponent({ name: 'RegisterForm' })
           <AppButton
             :status="ButtonStatus.SUCCESS"
             :type="ButtonType.FULL_FILL"
-            :content="'Next'"
+            :content="'Tiếp tục'"
           />
         </div>
       </div>

@@ -4,14 +4,20 @@ import type { ClassRoom } from '@/types'
 import { defineComponent } from 'vue'
 import AppButton from '../shared/AppButton.vue'
 import { useRouter } from 'vue-router'
+import { toCurrency, toNormalize } from '@/utils'
+import { PAYMENTFREQUENCYMAP } from '@/constants/class.constant'
 
 const props = defineProps<{ classroom: ClassRoom }>()
 const router = useRouter()
-const emits = defineEmits(['get-detail'])
+const emits = defineEmits(['get-detail', 'enroll'])
 
 const handleGetDetail = (id: string) => {
   console.log(id)
   emits('get-detail', id)
+}
+
+const handleEnroll = () => {
+  emits('enroll', props.classroom.id)
 }
 defineComponent({ name: 'ClassCard' })
 </script>
@@ -30,38 +36,50 @@ defineComponent({ name: 'ClassCard' })
     </div>
     <dl class="card-body">
       <div class="card-body-items">
-        <dt class="card-body-dt">Subject:</dt>
+        <dt class="card-body-dt">Môn học:</dt>
         <dd class="card-body-dd">{{ props.classroom.subject.name }}</dd>
       </div>
 
       <div class="card-body-items">
-        <dt class="card-body-dt">Tuition:</dt>
+        <dt class="card-body-dt">Học phí:</dt>
         <dd
-          class="card-body-dd capitalize"
-          v-if="props.classroom.paymentFrequency !== PaymentFrequency.NEGOTIAL"
+          class="card-body-dd"
+          v-if="
+            props.classroom.paymentFrequency !== PaymentFrequency.NEGOTIAL &&
+            props.classroom.tuitionFee
+          "
         >
-          {{ props.classroom.tuitionFee }}$/{{ props.classroom.paymentFrequency }}
+          {{ toCurrency(props.classroom.tuitionFee) }}/{{
+            PAYMENTFREQUENCYMAP[props.classroom.paymentFrequency]
+          }}
         </dd>
-        <dd class="card-body-dd capitalize" v-else>{{ props.classroom.paymentFrequency }}</dd>
+        <dd class="card-body-dd" v-else>
+          {{ PAYMENTFREQUENCYMAP[props.classroom.paymentFrequency] }}
+        </dd>
       </div>
 
       <div class="card-body-items">
-        <dt class="card-body-dt">Requirement:</dt>
+        <dt class="card-body-dt">Yêu cầu:</dt>
         <dd class="card-body-dd">{{ props.classroom.request }}</dd>
       </div>
 
       <div class="card-body-items">
-        <dt class="card-body-dt">Teaching method:</dt>
+        <dt class="card-body-dt">Hình thức giảng dạy:</dt>
         <dd class="card-body-dd capitalize">{{ props.classroom.teachingMode }}</dd>
       </div>
 
       <div class="card-body-items" v-if="props.classroom.teachingMode === TeachingMode.OFFLINE">
-        <dt class="card-body-dt">Location:</dt>
+        <dt class="card-body-dt">Địa điểm:</dt>
         <dd class="card-body-dd">{{ props.classroom.location?.fullAddress }}</dd>
       </div>
     </dl>
     <div class="card-footer">
-      <AppButton :status="ButtonStatus.SUCCESS" :type="ButtonType.FULL_FILL" :content="'Enroll'" />
+      <AppButton
+        :status="ButtonStatus.SUCCESS"
+        :type="ButtonType.FULL_FILL"
+        :content="'Enroll'"
+        @click="handleEnroll"
+      />
       <AppButton
         :status="ButtonStatus.PRIMARY"
         :type="ButtonType.FULL_FILL"
@@ -86,15 +104,15 @@ defineComponent({ name: 'ClassCard' })
 }
 
 .card-body-dt {
-  @apply font-medium @sm:col-span-2;
+  @apply font-medium;
 }
 
 .card-body-dd {
-  @apply mx-2 pl-2 text-left @sm:col-span-3;
+  @apply mx-2 pl-2 text-left;
 }
 
 .card-body-items {
-  @apply flex flex-auto justify-start text-xs @sm:grid @sm:grid-cols-5 @sm:text-base;
+  @apply grid grid-flow-col-dense justify-start text-xs @sm:text-base;
 }
 
 .card-footer {

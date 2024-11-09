@@ -39,7 +39,7 @@ defineComponent({ name: 'AppSearchBar' })
         type="text"
         id="search"
         v-model="searchValue"
-        placeholder="Search classes.."
+        placeholder="Tìm kiếm..."
         required
         @keydown="handleSearch($event)"
       />

@@ -34,5 +34,11 @@ export const GeneralRouter = [
     path: '/tutors',
     name: 'tutors',
     component: () => import('../views/TutorView.vue')
+  },
+  {
+    path: '/tutor/:id',
+    name: 'tutor-detail',
+    component: () => import('../views/TutorDetail.vue'),
+    props: true
   }
 ]

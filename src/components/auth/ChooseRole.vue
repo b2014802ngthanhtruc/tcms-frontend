@@ -15,8 +15,8 @@ defineComponent({ name: 'ChooseRole' })
   <div
     class="flex min-h-screen flex-col items-center justify-center gap-8 bg-white shadow-md shadow-gray-400"
   >
-    <h1 class="mb-6 text-center text-4xl font-bold">Choose Role</h1>
-    <p class="mb-8 text-center text-lg text-gray-500">Please select role</p>
+    <h1 class="mb-6 text-center text-4xl font-bold">Chọn vai trò</h1>
+    <p class="mb-8 text-center text-lg text-gray-500">Vui lòng chọn vai trò</p>
     <div class="w-full max-w-md space-y-10">
       <!-- Radio Button for Student -->
       <label
@@ -24,7 +24,7 @@ defineComponent({ name: 'ChooseRole' })
         :class="{ 'border-blue-500': role === 'student' }"
       >
         <font-awesome-icon :icon="['fas', 'graduation-cap']" size="2xl" style="color: #080a0c" />
-        <span class="text-lg font-semibold text-gray-700">Student</span>
+        <span class="text-lg font-semibold text-gray-700">Học sinh</span>
         <input
           type="radio"
           value="student"
@@ -38,7 +38,7 @@ defineComponent({ name: 'ChooseRole' })
         :class="{ 'border-blue-500': role === 'tutor' }"
       >
         <font-awesome-icon :icon="['fas', 'chalkboard-user']" size="2xl" style="color: #000000" />
-        <span class="text-xl font-semibold text-gray-700">Tutor</span>
+        <span class="text-xl font-semibold text-gray-700">Gia sư</span>
         <input type="radio" value="tutor" v-model="role" class="form-radio h-5 w-5 text-blue-500" />
       </label>
     </div>

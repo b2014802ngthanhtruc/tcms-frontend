@@ -30,7 +30,7 @@ import { getFileNameAndExtension, getUserIdFromLS } from '@/utils'
 import UploadService from '@/services/upload/upload.service'
 import AuthTutorService from '@/services/auth/auth-tutor.service'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { GRADEMAP } from '@/constants/class.constanst'
+import { GRADEMAP } from '@/constants/class.constant'
 import {
   Combobox,
   ComboboxInput,
@@ -105,19 +105,19 @@ const TutorProfileSchema = yup.object({
         return (value as File) && (value as File).size <= 2097152 // Giới hạn file 2MB
       })
   }),
-  areaExpect: yup.array(
+  areaExpects: yup.array(
     yup.object({
       city: yup.string().required('City is required'),
-      district: yup.string().required('District is required')
+      districts: yup.array(yup.string()).required('District is required')
     })
   ),
-  timeExpect: yup.array(
+  timeExpects: yup.array(
     yup.object({
       dow: yup.string().required('Day of week is required'),
-      time: yup.string().required('Time is required')
+      sessions: yup.array(yup.string()).required('Time is required')
     })
   ),
-  jobReference: yup.array(
+  jobReferences: yup.array(
     yup.object({
       class: yup.string().required('Class is required'),
       subjects: yup.array(yup.string()).required('Subjects is required')
@@ -472,23 +472,15 @@ const handleTutorCompleteProfile = async (values: any) => {
   const registerValues = values as TutorCompleteRegisterRequest
   console.log('Form Submitted: ', registerValues)
 
-  registerValues.areaExpect = listViewAddressSelections.value.flatMap((item) => {
-    return item.level2!.map((itemLv2) => {
-      return {
-        city: item.name,
-        district: itemLv2.name
-      }
-    })
-  })
-  registerValues.timeExpect = selectedSchedules.value.flatMap((item) => {
-    return item.level2!.map((itemLv2) => {
-      return {
-        dow: item.name,
-        time: itemLv2.name
-      }
-    })
-  })
-  registerValues.jobReference = listViewSelectionSubjects.value.flatMap((item) => {
+  registerValues.areaExpects = listViewAddressSelections.value.map((item) => ({
+    city: item.name,
+    districts: item.level2!.map((itemLv2) => itemLv2.name)
+  }))
+  registerValues.timeExpects = selectedSchedules.value.map((item) => ({
+    dow: item.name,
+    sessions: item.level2!.map((itemLv2) => itemLv2.name)
+  }))
+  registerValues.jobReferences = listViewSelectionSubjects.value.flatMap((item) => {
     return item.level2!.map((itemLv2) => {
       return {
         grade: item.name,
@@ -538,6 +530,7 @@ const handleTutorCompleteProfile = async (values: any) => {
       fileKey.value = presignedUrl.key
     }
     registerValues.educationalQualification.certificateUrl = fileKey.value
+    console.log('registerValues', registerValues)
 
     emits('tutorCompleteProfile', registerValues)
   } catch (validationError: any) {

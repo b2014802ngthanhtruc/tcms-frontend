@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import AppButton from '@/components/shared/AppButton.vue'
+import {
+  CLASSLEVELMAP,
+  DAYOFWEEKMAP,
+  PAYMENTFREQUENCYMAP,
+  SCOPEMAP,
+  SESSIONMAP
+} from '@/constants/class.constant'
+import { GENDERMAP } from '@/constants/gender.constant'
 import { DEFAULT_AVATAR } from '@/constants/user.constant'
-import { ButtonStatus, ButtonType } from '@/enums'
+import { ButtonStatus, ButtonType, PaymentFrequency } from '@/enums'
 import GeneralClassroomService from '@/services/classroom/general-classroom.service'
 import StudentClassroomService from '@/services/classroom/student-classroom.service'
 import TutorClassroomService from '@/services/classroom/tutor-classroom.service'
 
 import type { ClassResponse, ClassRoom, UserLogin } from '@/types'
-import { getUserLoginFromLS } from '@/utils'
+import { checkIsLogin, getUserLoginFromLS, toCurrency, toNormalize } from '@/utils'
 import type { AxiosError } from 'axios'
 import { defineComponent, onMounted, ref } from 'vue'
 import { toast } from 'vue3-toastify'
@@ -29,6 +37,11 @@ onMounted(async () => {
 })
 
 const handleEnroll = async () => {
+  const isLoggedIn = checkIsLogin()
+  if (!isLoggedIn) {
+    toast.warning('You need to be logged in to enroll in this class!')
+    return
+  }
   if (user.value && user.value.isStudent) {
     try {
       await studentClassroomService.enroll(props.id)
@@ -61,124 +74,140 @@ const handleEnroll = async () => {
       <h1 class="class-title">{{ classRoom?.className }}</h1>
     </div>
     <div class="grid grid-flow-row-dense self-center">
-      <table class="mx-auto grid w-full grid-cols-2 justify-items-center p-3">
+      <table class="mx-auto grid w-full grid-cols-2 justify-items-center p-3" v-if="classRoom">
         <tbody class="body-table-col">
           <tr class="body-table-col-tr">
-            <th>Subject:</th>
-            <td>{{ classRoom?.subject.name }}</td>
+            <th>Môn học:</th>
+            <td>{{ classRoom.subject.name }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Class:</th>
-            <td>{{ classRoom?.level }}</td>
+            <th>Lớp:</th>
+            <td v-if="classRoom.level">{{ CLASSLEVELMAP[classRoom.level] }}</td>
+            <td v-else>Chờ cập nhật</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Requirement:</th>
-            <td>{{ classRoom?.request }}</td>
+            <th>Yêu cầu:</th>
+            <td>{{ classRoom.request }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Tuition fee:</th>
-            <td>{{ classRoom?.tuitionFee }}/{{ classRoom?.paymentFrequency }}</td>
+            <th>Học phí:</th>
+            <td
+              v-if="
+                classRoom.tuitionFee && classRoom.paymentFrequency !== PaymentFrequency.NEGOTIAL
+              "
+            >
+              {{ toCurrency(classRoom?.tuitionFee) }}/{{
+                PAYMENTFREQUENCYMAP[classRoom.paymentFrequency]
+              }}
+            </td>
+            <td v-else>{{ PAYMENTFREQUENCYMAP[classRoom.paymentFrequency] }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Teaching mode:</th>
-            <td>{{ classRoom?.teachingMode }}</td>
+            <th>Hình thức giảng dạy:</th>
+            <td class="capitalize">{{ classRoom.teachingMode }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Scope:</th>
-            <td>{{ classRoom?.scope }}</td>
+            <th>Quy mô:</th>
+            <td class="capitalize">{{ SCOPEMAP[classRoom.scope] }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Max students:</th>
-            <td>{{ classRoom?.quantityStudents }}</td>
+            <th>Tổng số học sinh:</th>
+            <td>{{ classRoom.quantityStudents }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Description:</th>
-            <td>{{ classRoom?.description }}</td>
+            <th>Mô tả:</th>
+            <td v-if="classRoom.description">{{ toNormalize(classRoom.description) }}</td>
+            <td v-else>Không có mô tả</td>
           </tr>
         </tbody>
         <tbody class="body-table-col">
           <tr class="body-table-col-tr">
-            <th>Location:</th>
-            <td>{{ classRoom?.location?.fullAddress }}</td>
+            <th>Địa điểm:</th>
+            <td v-if="classRoom.location?.fullAddress">{{ classRoom.location?.fullAddress }}</td>
+            <td v-else>Không có địa điểm</td>
           </tr>
           <tr>
-            <th>Schedules:</th>
-            <td v-for="schedule in classRoom?.schedules" class="grid grid-cols-2 gap-3 px-5">
-              <p>{{ schedule.dow }}</p>
-              <p>{{ schedule.time }}</p>
+            <th>Lịch học:</th>
+            <td
+              v-for="schedule in classRoom.schedules"
+              class="grid grid-cols-2 gap-3 px-5 capitalize"
+            >
+              <p>{{ DAYOFWEEKMAP[schedule.dow] }}</p>
+              <p>{{ SESSIONMAP[schedule.time] }}</p>
             </td>
           </tr>
           <tr class="grid grid-flow-col-dense justify-items-start gap-2">
-            <th>Start at:</th>
+            <th>Ngày dự kiến bắt đầu:</th>
             <td>
               {{ classRoom ? new Date(classRoom.startedAt).toLocaleDateString('en-GB') : '' }}
             </td>
-            <th>End at:</th>
+            <th>Ngày dự kiến kết thúc:</th>
             <td>{{ classRoom ? new Date(classRoom!.endedAt).toLocaleDateString('en-GB') : '' }}</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Total days:</th>
-            <td>{{ classRoom?.totalDays }} days</td>
+            <th>Tổng số ngày:</th>
+            <td>{{ classRoom.totalDays }} days</td>
           </tr>
           <tr class="body-table-col-tr">
-            <th>Enrolled students:</th>
-            <td>{{ classRoom?.studentOfClasses.length }}</td>
+            <th>Số học sinh đã đăng ký:</th>
+            <td>{{ classRoom.studentOfClasses.length }}</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="my-3 grid grid-flow-row-dense self-center p-4" v-if="classRoom?.tutor">
+    <div class="my-3 grid grid-flow-row-dense self-center p-4" v-if="classRoom && classRoom.tutor">
       <div class="flex flex-auto justify-center justify-items-center text-3xl font-bold">
-        <h1>Tutor information</h1>
+        <h1>Thông tin gia sư</h1>
       </div>
       <div class="grid grid-flow-col-dense self-center">
-        <img :src="classRoom?.tutor.avatar ?? DEFAULT_AVATAR" alt="" class="h-60 w-60" />
+        <img :src="classRoom.tutor.avatar ?? DEFAULT_AVATAR" alt="" class="h-60 w-60" />
         <table class="mx-auto grid w-full grid-cols-2 justify-items-center p-3">
           <tbody class="body-table-col">
             <tr class="body-table-col-tr">
-              <th>Name:</th>
-              <td>{{ classRoom?.tutor.fullName }}</td>
+              <th>Họ tên:</th>
+              <td>{{ classRoom.tutor.fullName }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Phone:</th>
-              <td>{{ classRoom?.tutor.phone }}</td>
+              <th>Số điện thoại:</th>
+              <td>{{ classRoom.tutor.phone }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Gender:</th>
-              <td>{{ classRoom?.tutor.gender }}</td>
+              <th>Giới tính:</th>
+              <td>{{ GENDERMAP[classRoom.tutor.gender] }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Date of birth:</th>
-              <td>{{ classRoom?.tutor.dob }}</td>
+              <th>Ngày sinh:</th>
+              <td>{{ classRoom.tutor.dob }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Address:</th>
-              <td>{{ classRoom?.tutor.address.fullAddress }}</td>
+              <th>Địa chỉ:</th>
+              <td>{{ classRoom.tutor.address.fullAddress }}</td>
             </tr>
           </tbody>
           <tbody class="body-table-col">
             <tr class="body-table-col-tr">
-              <th>Degree:</th>
-              <td>{{ classRoom?.tutor.educationalQualification.degree }}</td>
+              <th>Bằng cấp:</th>
+              <td class="capitalize">{{ classRoom.tutor.educationalQualification.degree }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>University:</th>
-              <td>{{ classRoom?.tutor.educationalQualification.university }}</td>
+              <th>Trường Đại học/Cơ quan:</th>
+              <td>{{ classRoom.tutor.educationalQualification.university }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Major:</th>
-              <td>{{ classRoom?.tutor.educationalQualification.major }}</td>
+              <th>Chuyên ngành:</th>
+              <td>{{ classRoom.tutor.educationalQualification.major }}</td>
             </tr>
             <tr class="body-table-col-tr">
-              <th>Description:</th>
-              <td>{{ classRoom?.tutor.description }}</td>
+              <th>Mô tả:</th>
+              <td v-if="classRoom.tutor.description">{{ classRoom.tutor.description }}</td>
+              <td v-else>Không có mô tả</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
     <div class="mt-3 flex flex-auto justify-center self-center p-4 text-lg italic" v-else>
-      <p>This class is currently unstaffed</p>
+      <p>Lớp học này hiện chưa có gia sư đăng ký</p>
     </div>
     <div class="mt-3 grid grid-flow-col p-4" v-if="user?.isStudent || classRoom?.tutorId === null">
       <div class="mx-auto w-6/12">
@@ -198,7 +227,7 @@ const handleEnroll = async () => {
 }
 
 .body-table-col {
-  @apply grid grid-flow-row gap-3 p-4 capitalize;
+  @apply grid grid-flow-row gap-3 p-4;
 }
 
 .body-table-col-tr {

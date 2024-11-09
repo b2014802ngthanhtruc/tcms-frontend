@@ -36,7 +36,7 @@ defineComponent({ name: 'ForgotPassword' })
       <div class="mt-[19px] flex justify-center">
         <img :src="logo" alt="Logo" class="w-[200px]" />
       </div>
-      <div class="mt-[10px] text-center text-[40px] font-semibold">Forgot Password</div>
+      <div class="mt-[10px] text-center text-[40px] font-semibold">Quên mật khẩu</div>
       <Form
         :validation-schema="forgotPasswordSchema"
         @submit="forgotPassword"
@@ -56,16 +56,14 @@ defineComponent({ name: 'ForgotPassword' })
         </div>
 
         <div class="mt-2 flex w-full items-center justify-between">
-          <a @click="returnLogin" href="#" class="text-[13px]">Login</a>
-          <RouterLink to="/auth/general/register" class="text-[13px] underline"
-            >Register</RouterLink
-          >
+          <a @click="returnLogin" href="#" class="text-[13px]">Đăng nhập</a>
+          <RouterLink to="/auth/general/register" class="text-[13px] underline">Đăng ký</RouterLink>
         </div>
         <div class="flex w-full items-center justify-between py-8">
           <AppButton
             :status="ButtonStatus.SUCCESS"
             :type="ButtonType.FULL_FILL"
-            :content="'Submit'"
+            :content="'Tiếp tục'"
           />
         </div>
       </Form>

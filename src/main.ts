@@ -10,6 +10,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import VueTelInput from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
 import PrimeVue from 'primevue/config'
+import VueDatePicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 
 import Vue3Toastify, { type ToastContainerOptions } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
@@ -26,9 +28,12 @@ const globalOptions = {
 }
 
 app.use(VueTelInput, globalOptions)
+
 app.use(PrimeVue)
 
 app.component('font-awesome-icon', FontAwesomeIcon)
+app.component('VueDatePicker', VueDatePicker)
+
 app.use(Vue3Toastify, {
   autoClose: 3000
 } as ToastContainerOptions)

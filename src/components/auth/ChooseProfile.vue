@@ -44,24 +44,14 @@ defineComponent({ name: 'ChooseProfile' })
       <div class="mt-[19px] flex justify-center">
         <img :src="logo" alt="Logo" class="w-[200px]" />
       </div>
-      <div class="mt-[10px] text-center text-[40px] font-semibold">Choose your profile</div>
+      <div class="mt-[10px] text-center text-[40px] font-semibold">Chọn hồ sơ của bạn</div>
       <form
         action=""
         method="post"
         class="mt-[60px] flex w-[347px] flex-col items-center justify-center"
       >
         <div class="w-full">
-          <label for="student" class="block text-[20px]">Student</label>
-          <!-- <select
-            id="student"
-            class="mt-1 w-full rounded-[10px] border-none text-[#2f2e2e]"
-            @change="handleChooseStudentProfile(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="#" selected>Choose a student</option>
-            <option v-for="student in userProfile.students" :key="student.id" :value="student.id">
-              {{ student.fullName }}
-            </option>
-          </select> -->
+          <label for="student" class="block text-[20px]">Học sinh</label>
           <Listbox
             @update:model-value="handleChooseStudentProfile"
             v-if="userProfile.students.length > 0"
@@ -123,12 +113,12 @@ defineComponent({ name: 'ChooseProfile' })
               type="button"
               class="mt-1 w-full rounded-[10px] bg-white p-3 hover:bg-sky-200"
             >
-              <p class="self-start">No student profile. Create one</p>
+              <p class="self-start">Không có hồ sơ học sinh nào. Tạo mới</p>
             </button>
           </div>
         </div>
         <div class="w-full pt-5">
-          <label for="=tutor" class="block text-[20px]">Tutor</label>
+          <label for="=tutor" class="block text-[20px]">Gia sư</label>
           <button
             :value="userProfile.tutor.id"
             @click="handleChooseTutorProfile(userProfile.tutor.id)"

@@ -74,22 +74,22 @@ const prev = () => {
       class="w-full flex-auto space-y-4 rounded-lg bg-white p-6 align-middle text-5xl font-bold drop-shadow-lg"
     >
       <div class="grid grid-flow-row justify-items-center p-3">
-        <p>Welcome to Day Break Tutor Center.</p>
+        <p>Chào mừng đến với Trung tâm Gia sư Day Break.</p>
       </div>
       <div class="grid grid-flow-row justify-items-center p-3">
-        <p>Where knowledge meets opportunity.</p>
+        <p>Nơi kiến thức gặp gỡ cơ hội.</p>
       </div>
     </div>
 
     <div class="mx-8 my-20 grid grid-flow-col-dense justify-between gap-4 p-2">
       <div class="grid grid-flow-row content-around text-2xl">
         <p class="text-justify indent-16">
-          We provide personalized tutoring services to help students improve their academic
-          performance.
+          Chúng tôi cung cấp dịch vụ gia sư cá nhân hóa để giúp học sinh nâng cao thành tích học
+          tập.
         </p>
         <p class="text-justify indent-16">
-          Our goal is to create a nurturing environment where students can grow and achieve their
-          educational objectives.
+          Mục tiêu của chúng tôi là tạo ra một môi trường nuôi dưỡng, nơi học sinh có thể phát triển
+          và đạt được các mục tiêu giáo dục của mình.
         </p>
       </div>
       <img
@@ -102,8 +102,8 @@ const prev = () => {
     <div class="mt-3 grid grid-flow-row-dense justify-center">
       <div class="flex rounded-lg border border-black p-6 text-2xl font-bold">
         <p class="text-justify">
-          The center offers experienced tutors who specialize in various subjects, ensuring quality
-          guidance and support.
+          Trung tâm cung cấp đội ngũ gia sư giàu kinh nghiệm, chuyên sâu trong nhiều môn học, đảm
+          bảo hướng dẫn và hỗ trợ chất lượng.
         </p>
       </div>
 
@@ -111,7 +111,7 @@ const prev = () => {
         <TutorAvatar v-for="tutor in props.tutors" :url="tutor" />
       </div>
       <div class="mt-4 flex flex-auto justify-center text-4xl font-medium">
-        <h3>New Classrooms</h3>
+        <h3>Các lớp học mới</h3>
       </div>
       <div class="mt-4 grid grid-flow-col-dense justify-between">
         <button @click="prev" :disabled="currentIndex === 0" class="previous-button">

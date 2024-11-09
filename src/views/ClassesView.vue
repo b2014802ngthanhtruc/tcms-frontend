@@ -11,7 +11,7 @@ import type {
   CityResponse,
   Pagination
 } from '@/types'
-import { getQueryParams, toNormalize } from '@/utils'
+import { checkIsLogin, getQueryParams, getUserLoginFromLS, toNormalize } from '@/utils'
 import { computed, onMounted, ref } from 'vue'
 import type { FilterKey } from '@/components/shared/AppFilterTab.vue'
 import { ClassLevel, ClassStatus } from '@/enums'
@@ -20,9 +20,16 @@ import AddressService from '@/services/address/address.service'
 import { FilterOperationType } from '@chax-at/prisma-filter-common'
 import AppPaginationBar from '@/components/shared/AppPaginationBar.vue'
 import { useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
+import StudentClassroomService from '@/services/classroom/student-classroom.service'
+import TutorClassroomService from '@/services/classroom/tutor-classroom.service'
+import type { AxiosError } from 'axios'
+import { CLASSLEVELMAP } from '@/constants/class.constant'
 
 const generalClassroomService = new GeneralClassroomService()
 const addressService = new AddressService()
+const studentClassroomService = new StudentClassroomService()
+const tutorClassroomService = new TutorClassroomService()
 const router = useRouter()
 
 const isOpenFilter = ref(false)
@@ -69,11 +76,11 @@ const sortFields = [
   },
   {
     field: 'createdAt',
-    mask: 'newest'
+    mask: 'Mới nhất'
   },
   {
     field: 'tuitionFee',
-    mask: 'tuition'
+    mask: 'Học phí'
   }
 ]
 
@@ -82,7 +89,7 @@ const twoColumn = computed(() => {
   const result: FilterKey[] = [
     {
       field: 'teachingMode',
-      label: 'method',
+      label: 'Hình thức giảng dạy',
       items: [
         { value: 'online', mask: 'online' },
         { value: 'offline', mask: 'offline' }
@@ -90,18 +97,18 @@ const twoColumn = computed(() => {
     },
     {
       field: 'scope',
-      label: 'scope',
+      label: 'Quy mô',
       items: [
-        { value: 'small', mask: 'small', description: '1-2 students' },
-        { value: 'medium', mask: 'medium', description: '3-5 students' },
-        { value: 'large', mask: 'large', description: '6-10 students' }
+        { value: 'small', mask: 'Nhỏ', description: '1-2 học sinh' },
+        { value: 'medium', mask: 'Trung bình', description: '3-5 học sinh' },
+        { value: 'large', mask: 'Lớn', description: '6-10 học sinh' }
       ]
     }
   ]
   console.log('cities', cities.value)
   result.push({
     field: 'location.city',
-    label: 'city',
+    label: 'Tỉnh/Thành phố',
     items: cities.value.map((city) => ({ value: city.name, mask: city.name }))
   })
   console.log(result)
@@ -111,10 +118,10 @@ const threeColumn = computed<FilterKey[]>(() => {
   const result: FilterKey[] = []
   result.push({
     field: 'level',
-    label: 'level',
+    label: 'Lớp',
     items: Object.values(ClassLevel).map((level) => ({
       value: level,
-      mask: toNormalize(level)
+      mask: toNormalize(CLASSLEVELMAP[level])
     }))
   })
   return result
@@ -186,6 +193,36 @@ const handleGotoDetail = (id: string) => {
   console.log(id)
   router.push({ name: 'classroom-detail', params: { id } })
 }
+
+const handleEnroll = async (id: string) => {
+  console.log(id)
+  const isLoggedIn = checkIsLogin()
+  const user = getUserLoginFromLS()
+  if (!isLoggedIn) {
+    toast.warning('You need to be logged in to enroll in this class!')
+    return
+  }
+  if (user && user.isStudent) {
+    try {
+      await studentClassroomService.enroll(id)
+      toast.success('Enroll successfully!')
+    } catch (error) {
+      const err = error as AxiosError
+      const data: any = err.response?.data
+      toast.error(data.message)
+    }
+  }
+  if (user && user.isTutor) {
+    try {
+      await tutorClassroomService.enroll(id)
+      toast.success('Enroll successfully!')
+    } catch (error) {
+      const err = error as AxiosError
+      const data: any = err.response?.data
+      toast.error(data.message)
+    }
+  }
+}
 </script>
 <template>
   <div :class="isOpenFilter ? 'grid grid-cols-12' : 'container mx-auto'">
@@ -194,7 +231,8 @@ const handleGotoDetail = (id: string) => {
         :filterFields="{
           oneColumn: [],
           twoColumn,
-          threeColumn
+          threeColumn,
+          queryFilter: queryFilter ?? []
         }"
         @closeTab="hanldeCloseTab"
         @filter="handleFilter"
@@ -222,7 +260,7 @@ const handleGotoDetail = (id: string) => {
       </div>
       <div class="grid grid-cols-4 gap-3 @6xl:grid-cols-5" v-if="classrooms.length > 0">
         <div class="w-full @container" v-for="classroom in classrooms">
-          <ClassCard :classroom="classroom" @get-detail="handleGotoDetail" />
+          <ClassCard :classroom="classroom" @get-detail="handleGotoDetail" @enroll="handleEnroll" />
         </div>
       </div>
       <p v-else class="mx-auto">No data</p>

@@ -69,17 +69,22 @@ const handleOpenModalLogin = () => {
 
 const handleCloseModalLogin = () => {
   isOpenModal.value = false
+  step.value = 1
+  const isLoggedIn = checkIsLogin()
+  if (!isLoggedIn) {
+    clearLS()
+  }
 }
 
 const handleLogin = async (value: { email: string; password: string }) => {
   try {
     const result = await authService.getStarted(value.email)
     if (!result.isRegistered) {
-      toast.error('Email or password is incorrect')
+      toast.error('Email hoặc mật khẩu không chính xác')
     }
     setUserIdToLS(result.id)
     if (!result.isVerifiedEmail) {
-      toast.error('Email not verified. Please verify your email')
+      toast.error('Email chưa được xác thực. Vui lòng xác thực email.')
       await authService.resendCode(result.id)
       step.value = 5
     }
@@ -118,7 +123,7 @@ const handleTutorLogin = async (id: string) => {
     tutor.value = await tutorService.getProfile()
     saveUserLoginToLS({
       id: tutor.value!.id,
-      userId: tutor.value!.userId,
+      userId: getUserIdFromLS(),
       isStudent: false,
       isTutor: true
     })
@@ -143,7 +148,7 @@ const handleReturnLogin = () => {
 const handleForgotPassword = async (value: any) => {
   try {
     await authService.forgotPassword(value.email)
-    toast.success('Reset password code has been sent to your email!')
+    toast.success('Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra lại email!')
     email.value = value.email
     step.value = 4
   } catch (error) {
@@ -156,7 +161,7 @@ const handleForgotPassword = async (value: any) => {
 const handleResetPassword = async ({ code, password }: ResetPasswordRequest) => {
   try {
     await authService.resetPassword(email.value, code, password)
-    toast.success('Reset password successfully!')
+    toast.success('Đặt lại mật khẩu thành công!')
     step.value = 1
     email.value = ''
   } catch (error) {
@@ -213,12 +218,6 @@ const handleGotoProfile = () => {
   router.push({ name: 'tutor-profile' })
 }
 
-watchEffect((isOpenModal) => {
-  if (!isOpenModal) {
-    step.value = 1
-  }
-})
-
 defineComponent({ name: 'AppHeader' })
 </script>
 <template>
@@ -261,33 +260,33 @@ defineComponent({ name: 'AppHeader' })
       <nav class="grid grid-flow-col-dense content-around gap-4">
         <div class="col-span-7 grid grid-flow-col-dense justify-items-center gap-2">
           <div class="nav-items">
-            <RouterLink to="/">Home</RouterLink>
+            <RouterLink to="/">Trang chủ</RouterLink>
           </div>
           <div class="nav-items">
-            <RouterLink to="/about">About</RouterLink>
+            <RouterLink to="/about">Giới thiệu</RouterLink>
           </div>
           <div class="nav-items">
-            <RouterLink to="/classrooms">Class</RouterLink>
+            <RouterLink to="/classrooms">Lớp học</RouterLink>
           </div>
           <div class="nav-items">
-            <RouterLink to="/test">Tutor</RouterLink>
+            <RouterLink to="/tutors">Gia sư</RouterLink>
           </div>
           <div class="nav-items">
-            <RouterLink to="/test">Subject</RouterLink>
+            <RouterLink to="/test">Môn học</RouterLink>
           </div>
         </div>
 
         <div class="grid grid-cols-2 justify-items-center gap-2" v-if="!isLogin">
           <div class="nav-authen">
-            <button @click="handleOpenModalLogin">Login</button>
+            <button @click="handleOpenModalLogin">Đăng nhập</button>
           </div>
           <div class="nav-authen">
-            <RouterLink to="/auth/general/register">Register</RouterLink>
+            <RouterLink to="/auth/general/register">Đăng ký</RouterLink>
           </div>
         </div>
         <div v-else class="group z-50 flex flex-auto items-center justify-center">
           <div
-            class="w-6/ flex items-center justify-center gap-3 rounded-full bg-white p-2 group-hover:bg-sky-200"
+            class="flex w-6/12 items-center justify-center gap-3 rounded-full bg-white p-2 group-hover:bg-sky-200"
           >
             <Menu as="div" class="relative inline-block text-left">
               <div>
@@ -313,7 +312,7 @@ defineComponent({ name: 'AppHeader' })
                 leave-to-class="transform scale-95 opacity-0"
               >
                 <MenuItems
-                  class="absolute right-0 mt-2 w-40 origin-center divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
+                  class="absolute right-0 mt-2 w-48 origin-center divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
                 >
                   <div
                     class="grid grid-flow-row-dense justify-items-center px-1 py-1 font-medium capitalize"
@@ -334,7 +333,7 @@ defineComponent({ name: 'AppHeader' })
                           size="lg"
                           :class="[active ? 'text-white' : 'text-blue-600']"
                         />
-                        My profile
+                        Trang cá nhân
                       </button>
                     </MenuItem>
                     <MenuItem v-slot="{ active }">
@@ -349,7 +348,7 @@ defineComponent({ name: 'AppHeader' })
                           size="lg"
                           :class="[active ? 'text-white' : 'text-blue-600']"
                         />
-                        My classes
+                        Các lớp học của tôi
                       </button>
                     </MenuItem>
                   </div>
@@ -368,7 +367,7 @@ defineComponent({ name: 'AppHeader' })
                           size="lg"
                           :class="[active ? 'text-white' : 'text-blue-600']"
                         />
-                        Logout
+                        Đăng xuất
                       </button>
                     </MenuItem>
                   </div>
