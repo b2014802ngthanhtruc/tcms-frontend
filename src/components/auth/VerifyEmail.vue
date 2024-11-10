@@ -13,20 +13,20 @@ const codeIndex = ref(0)
 // Rules
 defineRule('validateCode', (value: string) => {
   if (value.length === 0) {
-    errorMessage.value = 'Verification code is required.'
-    return 'Verification code is required.'
+    errorMessage.value = 'Yêu cầu mã xác nhận.'
+    return 'Yêu cầu mã xác nhận.'
   }
   if (value.length > 1) {
-    errorMessage.value = 'Verification code must be a single digit.'
-    return 'Code must be a single digit'
+    errorMessage.value = 'Mã xác minh phải là một chữ số duy nhất.'
+    return 'Mã phải là một chữ số duy nhất.'
   }
   if (RegExp(/^[0-9]+$/).test(value) === false) {
-    errorMessage.value = 'Verification code must be a number character.'
-    return 'Code must be a number character'
+    errorMessage.value = 'Mã xác minh phải là ký tự số.'
+    return 'Mã phải là ký tự số.'
   }
   const emptyIndex = codeArray.value.findIndex((item) => item === '')
   if (emptyIndex >= 0 && emptyIndex < 5) {
-    errorMessage.value = 'Verification code is required.'
+    errorMessage.value = 'Yêu cầu mã xác nhận.'
     return false
   }
   errorMessage.value = ''
@@ -91,10 +91,10 @@ defineComponent({ name: 'VerifyEmail' })
       class="flex h-full w-full flex-col justify-center space-y-10 rounded-lg bg-white p-6 shadow-md"
     >
       <!-- Title -->
-      <h2 class="mb-6 text-center text-3xl font-bold text-black">Verify Account</h2>
+      <h2 class="mb-6 text-center text-3xl font-bold text-black">Xác minh tài khoản</h2>
 
       <!-- Subtitle -->
-      <p class="mb-6 text-center text-gray-500">Please enter the verify code</p>
+      <p class="mb-6 text-center text-gray-500">Vui lòng nhập mã xác minh</p>
 
       <!-- Form -->
       <Form @submit="handleVerify" class="space-y-8" v-slot="{ errors }">
@@ -129,13 +129,13 @@ defineComponent({ name: 'VerifyEmail' })
 
         <!-- Resend Code Link -->
         <div class="mb-6 text-center">
-          <p class="text-gray-500">Can’t receive code?</p>
+          <p class="text-gray-500">Không nhận được mã?</p>
           <button
             type="button"
             @click="resendCode"
             class="mt-2 text-blue-500 hover:underline focus:outline-none"
           >
-            Resend code
+            Gửi lại mã
           </button>
         </div>
 
@@ -146,13 +146,13 @@ defineComponent({ name: 'VerifyEmail' })
               v-if="!error"
               :status="ButtonStatus.SUCCESS"
               :type="ButtonType.FULL_FILL"
-              :content="'Next'"
+              :content="'Tiếp theo'"
             />
             <AppButton
               v-else
               :status="ButtonStatus.DISABLED"
               :type="ButtonType.FULL_FILL"
-              :content="'Next'"
+              :content="'Tiếp theo'"
             />
           </div>
         </div>

@@ -117,26 +117,22 @@ const emit = defineEmits(['completeStudentProfile'])
 const StudentRegisterSchema = yup.object({
   firstName: yup
     .string()
-    .required('First name is required')
-    .test('is-valid-name', 'First name is invalid', (value) =>
-      RegExp(/^[\p{L} \s]+$/u).test(value)
-    ),
+    .required('Yêu cầu tên')
+    .test('is-valid-name', 'Tên không hợp lệ', (value) => RegExp(/^[\p{L} \s]+$/u).test(value)),
   lastName: yup
     .string()
-    .required('Last name is required')
-    .test('is-valid-name', 'First name is invalid', (value) =>
-      RegExp(/^[\p{L} \s]+$/u).test(value)
-    ),
+    .required('Yêu cầu họ')
+    .test('is-valid-name', 'Tên không hợp lệ', (value) => RegExp(/^[\p{L} \s]+$/u).test(value)),
   phone: yup
     .string()
-    .required('Phone is required')
-    .test('is-valid-phone', 'Phone number is invalid', (value) => {
+    .required('Yêu cầu số điện thoại')
+    .test('is-valid-phone', 'Số điện thoại không hợp lệ', (value) => {
       return isValidPhoneNumber(value as string)
     }),
-  gender: yup.string().required('Gender is required'),
+  gender: yup.string().required('Yêu cầu giới tính'),
   dob: yup
     .date()
-    .required('Date of birth is required')
+    .required('Yêu cầu ngày sinh')
     .transform((value) => new Date(value)),
   parentName: yup
     .string()
@@ -146,16 +142,16 @@ const StudentRegisterSchema = yup.object({
       }
       return value
     })
-    .test('is-valid-name', 'First name is invalid', (value) =>
+    .test('is-valid-name', 'Tên không hợp lệ', (value) =>
       value ? RegExp(/^[\p{L} \s]+$/u).test(value) : true
     )
     .optional(),
-  class: yup.string().required('Class is required'),
+  class: yup.string().required('Yêu cầu lớp'),
   address: yup.object({
-    address: yup.string().required('Address is required'),
-    city: yup.string().required('City is required'),
-    district: yup.string().required('District is required'),
-    ward: yup.string().required('Ward is required')
+    address: yup.string().required('Yêu cầu địa chỉ'),
+    city: yup.string().required('Yêu cầu thành phố'),
+    district: yup.string().required('Yêu cầu quận/huyện'),
+    ward: yup.string().required('Yêu cầu phường/xã')
   })
 })
 
@@ -399,7 +395,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
         </div>
         <!-- Class -->
         <div class="form-field">
-          <label for="" class="form-label">Class</label>
+          <label for="" class="form-label">Lớp</label>
           <Field
             name="class"
             v-slot="{ field, meta }"
@@ -515,7 +511,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(selectedCityId) => selectedCity?.name || 'Select a city'"
+                    :display-value="(selectedCityId) => selectedCity?.name || 'Chọn tỉnh/thành phố'"
                     @change="queryCityName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -591,7 +587,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(se) => selectedDistrict?.name || 'Select a district'"
+                    :display-value="(se) => selectedDistrict?.name || 'Chọn quận/huyện'"
                     @change="queryDistrictName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -668,7 +664,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(w) => selectedWard?.name || 'Select a ward'"
+                    :display-value="(w) => selectedWard?.name || 'Chọn xã/phường'"
                     @change="queryWardName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">

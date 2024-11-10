@@ -9,15 +9,12 @@ import { ButtonStatus, ButtonType } from '@/enums'
 
 // Tạo Yup schema cho form đăng ký
 const registerSchema = yup.object({
-  email: yup.string().email('Invalid email address').required('Email is required'),
-  password: yup
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .required('Password is required'),
+  email: yup.string().email('Địa chỉ email không hợp lệ').required('Yêu cầu email'),
+  password: yup.string().min(8, 'Mật khẩu phải có ít nhất 8 ký tự').required('Yêu cầu mật khẩu'),
   confirmPassword: yup
     .string()
-    .oneOf([yup.ref('password'), undefined], 'Passwords do not match')
-    .required('Confirm password is required')
+    .oneOf([yup.ref('password'), undefined], 'Mật khẩu không khớp')
+    .required('Yêu cầu xác nhận mật khẩu')
 })
 
 const emit = defineEmits(['register'])
@@ -38,7 +35,7 @@ defineComponent({ name: 'RegisterForm' })
     class="grid h-full w-full grid-flow-row-dense content-around justify-self-center px-28 shadow-lg shadow-gray-400"
   >
     <div class="form-header">
-      <h1>Register Account</h1>
+      <h1>Đăng ký tài khoản</h1>
     </div>
 
     <div class="form-body">
@@ -82,7 +79,7 @@ defineComponent({ name: 'RegisterForm' })
 
       <!-- Confirm Password Field -->
       <div class="form-field">
-        <label for="confirm-password" class="form-label">Confirm Password</label>
+        <label for="confirm-password" class="form-label">Xác nhận mật khẩu</label>
         <Field
           name="confirmPassword"
           id="confirm-password"
@@ -105,7 +102,7 @@ defineComponent({ name: 'RegisterForm' })
 
       <div class="form-footer">
         <p class="justify-self-end">
-          Already have an account? <a href="#" class="text-indigo-500">Login</a>
+          Bạn đã có tài khoản? <a href="#" class="text-indigo-500">Đăng nhập</a>
         </p>
 
         <div class="flex w-8/12 flex-auto justify-center justify-self-center">
