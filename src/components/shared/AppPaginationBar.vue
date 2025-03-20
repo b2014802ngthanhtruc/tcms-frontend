@@ -13,7 +13,10 @@ const props = defineProps<{
 const emits = defineEmits(['next', 'previous', 'choose-page'])
 
 const currentPage = ref(1)
-
+const displayPage = computed(() => {
+  currentPage.value > totalPages.value ? (currentPage.value = 1) : currentPage.value
+  return currentPage.value
+})
 const totalPages = computed(() => {
   return Math.ceil(props.pagination.count / props.pagination.limit)
 })
@@ -81,21 +84,19 @@ defineComponent({ name: 'AppPaginationBar' })
       @click="goToPage(page)"
       :class="[
         'mx-1 rounded-full border px-3 py-1 hover:bg-white hover:shadow-lg hover:shadow-gray-400',
-        { 'bg-blue-500 text-white hover:text-black': page === currentPage }
+        { 'bg-blue-500 text-white hover:text-black': page === displayPage }
       ]"
     >
       {{ page }}
     </button>
     <button
       @click="next"
-      :class="[
-        props.pagination.previous ? 'hover:bg-white hover:shadow-lg hover:shadow-gray-400' : ''
-      ]"
+      :class="[props.pagination.next ? 'hover:bg-white hover:shadow-lg hover:shadow-gray-400' : '']"
       :disabled="!props.pagination.next"
     >
       <font-awesome-icon
         :icon="['fas', 'angles-right']"
-        :style="{ color: props.pagination.previous ? '#000000' : '#787f8c' }"
+        :style="{ color: props.pagination.next ? '#000000' : '#787f8c' }"
       />
     </button>
   </div>

@@ -1,5 +1,6 @@
 import type { ClassLevel, Gender, Grade } from '@/enums'
 import type { Address } from './address.type'
+import type { ClassRoom } from './class.type'
 
 export type Student = {
   id: string
@@ -9,6 +10,7 @@ export type Student = {
   firstName: string
   lastName: string
   fullName: string
+  email: string
   phone: string
   avatar: string | null
   parentName: string | null
@@ -20,6 +22,7 @@ export type Student = {
   status: string
 
   address: Address
+  studentOfClasses: ClassRoom[]
 
   createdAt: Date
   updatedAt: Date | null

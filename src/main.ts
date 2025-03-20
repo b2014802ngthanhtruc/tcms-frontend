@@ -12,6 +12,11 @@ import 'vue-tel-input/vue-tel-input.css'
 import PrimeVue from 'primevue/config'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import en from '@vueform/vueform/locales/en'
+import Vueform from '@vueform/vueform'
+import vueformConfig from '../vueform.config'
+import { createVfm } from 'vue-final-modal'
+import 'vue-final-modal/style.css'
 
 import Vue3Toastify, { type ToastContainerOptions } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
@@ -27,7 +32,11 @@ const globalOptions = {
   autoFormat: true
 }
 
+const vfm = createVfm()
+
+app.use(Vueform, vueformConfig)
 app.use(VueTelInput, globalOptions)
+app.use(vfm)
 
 app.use(PrimeVue)
 
@@ -37,6 +46,7 @@ app.component('VueDatePicker', VueDatePicker)
 app.use(Vue3Toastify, {
   autoClose: 3000
 } as ToastContainerOptions)
+
 app.use(router)
 
 app.mount('#app')

@@ -12,8 +12,11 @@ export type AuthResponse = {
 export type UserLogin = {
   id: string
   userId: string
+  avatar?: string | null
+  username: string
   isTutor: boolean
   isStudent: boolean
+  isAdmin: boolean
 }
 
 export type RegisterResponse = {
@@ -60,7 +63,9 @@ export type TutorCompleteRegisterRequest = Pick<
   timeExpects: Pick<TimeExpect, 'sessions' | 'dow'>[]
 }
 
-export type TutorUpdateProfileRequest = Partial<Omit<TutorCompleteRegisterRequest, 'userId'>>
+export type TutorUpdateProfileRequest = Partial<
+  Omit<TutorCompleteRegisterRequest, 'userId'> & { avatar?: string }
+>
 
 export type ListStudentProfileItem = {
   id: string
@@ -84,6 +89,9 @@ export type StudentCompleteRegisterRequest = Pick<
   | 'parentName'
   | 'descrition'
 >
+export type StudentUpdateProfileRequest = Partial<
+  Omit<StudentCompleteRegisterRequest, 'userId'> & { avatar?: string }
+>
 
 export type ChooseProfileResponse = {
   id: string
@@ -97,4 +105,17 @@ export type ChooseProfileResponse = {
 export type ResetPasswordRequest = {
   code: string
   password: string
+}
+
+export type ChangePasswordRequest = {
+  oldPassword: string
+  newPassword: string
+}
+
+export type AdminProfile = {
+  id: string
+  email: string
+  username: string
+  isAdmin: boolean
+  status: string
 }

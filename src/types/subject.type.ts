@@ -8,3 +8,10 @@ export type Subject = {
   updatedAt: Date | null
   deletedAt: Date | null
 }
+
+export type CreateSubjectType = {
+  name: string
+  description: string
+}
+
+export type UpdateSubjectType = Partial<CreateSubjectType>

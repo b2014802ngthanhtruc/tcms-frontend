@@ -2,6 +2,7 @@ import type { ClassLevel, ClassSession, DayOfWeek, Gender, Grade } from '@/enums
 import type { Address } from './address.type'
 import type { ClassRoom } from './class.type'
 import type { Subject } from './subject.type'
+import type { UserResponse } from './user.type'
 
 export type Tutor = {
   id: string
@@ -26,6 +27,7 @@ export type Tutor = {
   status: string
 
   address: Address
+  user: UserResponse
   educationalQualification: EducationalQuantity
   classes: ClassRoom[]
   areaExpects: AreExpect[]
@@ -95,6 +97,7 @@ export type TimeExpect = {
 export type ListTutorResponse = {
   id: string
   fullName: string
+  avatar?: string
   gender: Gender
   dob: Date
   expectSalary: number

@@ -11,8 +11,10 @@ import { defineComponent } from 'vue'
 
       <!-- Welcome Message -->
       <div class="text-center text-white">
-        <h1 class="text-4xl font-bold">Welcome to Day Break Tutor Center</h1>
-        <p class="mt-4 text-lg">We hope you have a wonderful experience at the center!</p>
+        <h1 class="text-4xl font-bold">Chào mừng đến với Trung tâm gia sư DayBreak</h1>
+        <p class="mt-4 text-lg">
+          Chúng tôi hi vọng bạn sẽ có những trải nghiệm tuyệt vời với trung tâm!
+        </p>
       </div>
 
       <!-- Enter Button -->
@@ -21,7 +23,7 @@ import { defineComponent } from 'vue'
           to="/"
           class="flex w-full flex-auto cursor-pointer justify-center rounded-lg bg-white px-10 py-2 text-xl font-semibold text-black opacity-70 shadow-lg transition hover:bg-gray-200"
         >
-          <p class="opacity-100">Enter</p>
+          <p class="opacity-100">Vào trung tâm</p>
         </RouterLink>
       </div>
     </div>

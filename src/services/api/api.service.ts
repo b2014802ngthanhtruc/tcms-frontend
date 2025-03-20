@@ -9,7 +9,13 @@ import {
   setUserIdToLS
 } from '@/utils'
 import { useToast } from 'vue-toast-notification'
-import { API_URL, AUTH_STUDENT_API, AUTH_TUTOR_API } from '@/constants/eviroment.constant'
+import {
+  API_URL,
+  AUTH_ADMIN_API,
+  AUTH_STUDENT_API,
+  AUTH_TUTOR_API,
+  UPLOAD_API
+} from '@/constants/eviroment.constant'
 
 const $toast = useToast()
 
@@ -31,9 +37,12 @@ class Http {
     // Request Interceptor
     this.instance.interceptors.request.use((config) => {
       const accessToken = getAccessTokenFromLS()
+
+      // Kiểm tra URL hoặc payload có chứa "medias"
       if (accessToken) {
         config.headers.authorization = `Bearer ${accessToken}`
       }
+
       return config
     })
 
@@ -55,6 +64,7 @@ class Http {
         //   clearLS()
         // }
         if (url?.includes('general/register')) {
+          console.log(response.data)
           const data = response.data as RegisterResponse
           setUserIdToLS(data.userId)
         }
@@ -109,6 +119,12 @@ class Http {
     }
     if (userLogin.isStudent) {
       const result = await axios.post(`${API_URL}/${AUTH_STUDENT_API}/refresh-token`, {
+        refreshToken
+      })
+      saveAccessTokenToLS(result.data)
+    }
+    if (userLogin.isAdmin) {
+      const result = await axios.post(`${API_URL}/${AUTH_ADMIN_API}/refresh-token`, {
         refreshToken
       })
       saveAccessTokenToLS(result.data)

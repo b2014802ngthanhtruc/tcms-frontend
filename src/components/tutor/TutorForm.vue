@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import * as yup from 'yup'
 import { computed, defineComponent, onMounted, ref, watch, watchEffect } from 'vue'
-import { useForm, Field, Form, ErrorMessage } from 'vee-validate'
+import { useForm, Field, Form, ErrorMessage, validate } from 'vee-validate'
 import { yupResolver } from '@hookform/resolvers/yup'
 
 import {
@@ -17,6 +17,7 @@ import AppButton from '../shared/AppButton.vue'
 import type {
   CityResponse,
   District,
+  QueryParams,
   RegisterRequest,
   Subject,
   TutorCompleteRegisterRequest,
@@ -27,11 +28,17 @@ import AppListSelection, { type Selections } from '../shared/AppListSelection.vu
 import AppSelectionLevel, { type ListSelectionLevel } from '../shared/AppSelectionLevel.vue'
 import AddressService from '@/services/address/address.service'
 import SubjectService from '@/services/subject/subject.service'
-import { getFileNameAndExtension, getUserIdFromLS } from '@/utils'
+import { getFileNameAndExtension, getQueryParams, getUserIdFromLS } from '@/utils'
 import UploadService from '@/services/upload/upload.service'
 import AuthTutorService from '@/services/auth/auth-tutor.service'
 import { isValidPhoneNumber } from 'libphonenumber-js'
-import { GRADEMAP } from '@/constants/class.constant'
+import {
+  CLASSLEVELMAP,
+  CONVETGRADEMAP,
+  DAYOFWEEKMAP,
+  GRADEMAP,
+  SESSIONMAP
+} from '@/constants/class.constant'
 import {
   Combobox,
   ComboboxInput,
@@ -49,6 +56,8 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
 import type { Tutor } from '@/types/tutor.type'
 import VueDatePicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { FilterOperationType } from '@chax-at/prisma-filter-common'
+import { GENDERMAP } from '@/constants/gender.constant'
 // Variables
 const emits = defineEmits(['tutor-update-profile'])
 const addressService = new AddressService()
@@ -59,6 +68,10 @@ const authTutorService = new AuthTutorService()
 const errors = ref<Record<string, any>>({})
 const selectedFile = ref<File | null>(null)
 const fileKey = ref<string>('')
+const query = ref<QueryParams>({
+  limit: 30,
+  offset: 0
+})
 
 const props = defineProps<{ profile: Tutor }>()
 const tutorProfile = ref({
@@ -90,19 +103,19 @@ const TutorProfileSchema = yup.object({
   firstName: yup
     .string()
     .trim()
-    .min(2, 'First name must be at least 2 characters')
-    .max(50, 'First name is too long')
+    .min(2, 'Tên phải có ít nhất 2 ký tự')
+    .max(50, 'Tên không được quá 50 ký tự')
     .optional(),
   lastName: yup
     .string()
     .trim()
-    .min(2, 'Last name must be at least 2 characters')
-    .max(50, 'Last name is too long')
+    .min(2, 'Họ phải có ít nhất 2 ký tự')
+    .max(50, 'Họ không được quá 50 ký tự')
     .optional(),
   phone: yup
     .string()
     .trim()
-    .test((value) => {
+    .test('', 'Số điện thoại không hợp lệ', (value) => {
       console.log('valid phone:', value)
       if (!!value) return isValidPhoneNumber(value as string)
     })
@@ -111,7 +124,7 @@ const TutorProfileSchema = yup.object({
   dob: yup
     .date()
     .optional()
-    .test('is-valid-dob', 'Date of birth is invalid', (value) => {
+    .test('is-valid-dob', 'Ngày sinh không hợp lệ', (value) => {
       return value && value < new Date()
     }),
   identificationId: yup.string().trim().optional(),
@@ -119,10 +132,10 @@ const TutorProfileSchema = yup.object({
   description: yup.string().optional().nullable(),
   address: yup
     .object({
-      address: yup.string().required('Address is required'),
-      city: yup.string().required('City is required'),
-      district: yup.string().required('District is required'),
-      ward: yup.string().required('Ward is required')
+      address: yup.string().required('Hãy nhập địa chỉ'),
+      city: yup.string().required('Hãy chọn tỉnh/thành phố'),
+      district: yup.string().required('Hãy chọn quận/huyện'),
+      ward: yup.string().required('Hãy chọn xã/phường')
     })
     .optional(),
   educationalQualification: yup.object({
@@ -140,7 +153,7 @@ const TutorProfileSchema = yup.object({
     certificateUrl: yup
       .mixed()
       .optional()
-      .test('fileType', 'File must be an image (jpeg, jpg, png)', (value) => {
+      .test('fileType', 'File không được hỗ trợ', (value) => {
         console.log('file type:', value)
         if (!value) return true
         if (!props.profile.educationalQualification?.certificateUrl)
@@ -150,7 +163,7 @@ const TutorProfileSchema = yup.object({
           )
         return true
       })
-      .test('fileSize', 'File size is too large. Maximum size is 2MB', (value) => {
+      .test('fileSize', 'File quá lớn. Tối đa 2MB', (value) => {
         if (!props.profile.educationalQualification?.certificateUrl)
           return (value as File) && (value as File).size <= 2097152 // Giới hạn file 2MB
         return true
@@ -159,8 +172,8 @@ const TutorProfileSchema = yup.object({
   areaExpects: yup
     .array(
       yup.object({
-        city: yup.string().required('City is required'),
-        districts: yup.array(yup.string()).required('District is required')
+        city: yup.string().required('Hãy chọn tỉnh/thành phố'),
+        districts: yup.array(yup.string()).required('Hãy chọn quận/huyện')
       })
     )
     .min(1)
@@ -168,8 +181,8 @@ const TutorProfileSchema = yup.object({
   timeExpects: yup
     .array(
       yup.object({
-        dow: yup.string().required('Day of week is required'),
-        sessions: yup.array(yup.string()).required('Time is required')
+        dow: yup.string().required('Ngày trong tuần là bắt buộc'),
+        sessions: yup.array(yup.string()).required('Buổi là bắt buộc')
       })
     )
     .min(1)
@@ -177,8 +190,8 @@ const TutorProfileSchema = yup.object({
   jobReferences: yup
     .array(
       yup.object({
-        class: yup.string().required('Class is required'),
-        subjects: yup.array(yup.string()).required('Subjects is required')
+        class: yup.string().required('Lớp là bắt buộc'),
+        subjects: yup.array(yup.string()).required('Môn học là bắt buộc')
       })
     )
     .min(1)
@@ -188,25 +201,21 @@ const TutorProfileSchema = yup.object({
 
 // Address for personal
 const cities = ref<CityResponse[]>([])
-const selectedCityId = computed<string>({
-  get: () => {
-    if (tutorProfile.value.address.city) {
-      const city = cities.value.find((c) => c.name === tutorProfile.value.address.city)
-      if (city) {
-        return city.id
-      }
-    }
-    return ''
-  },
-  set: (value) => {
-    return value
+const selectedCityId = ref<string>('')
+const selectedCity = computed<CityResponse>(() => {
+  const city = cities.value.find((c) => c.id === selectedCityId.value)
+  if (!city) {
+    const selectFilterCity = filteredCity.value.find((c) => c.id === selectedCityId.value)
+    if (selectFilterCity) cities.value.push(selectFilterCity)
+    return selectFilterCity!
   }
+  return city
 })
-const selectedCity = computed<CityResponse>(
-  () => cities.value.find((c) => c.id === selectedCityId.value)!
-)
 const queryCityName = ref<string>('')
-const filteredCity = computed<CityResponse[]>(() => {
+const filteredCity = ref<CityResponse[]>([])
+
+watch(queryCityName, async () => {
+  console.log(queryCityName.value)
   const result =
     queryCityName.value === ''
       ? cities.value
@@ -216,7 +225,16 @@ const filteredCity = computed<CityResponse[]>(() => {
             .replace(/\s+/g, '')
             .includes(queryCityName.value.toLowerCase().replace(/\s+/g, ''))
         )
-  return result
+  filteredCity.value = result
+  if (filteredCity.value.length === 0 && queryCityName.value !== '') {
+    const searchQuery: QueryParams = {
+      ...query.value,
+      filter: [{ field: 'name', type: FilterOperationType.IContains, value: queryCityName.value }]
+    }
+    const searchQueryString = getQueryParams(searchQuery)
+    const searchCities = await addressService.listCities(searchQueryString)
+    filteredCity.value = searchCities.results
+  }
 })
 const districts = computed<District[]>(() => {
   const items: District[] = []
@@ -227,20 +245,7 @@ const districts = computed<District[]>(() => {
   return items
 })
 
-const selectedDistrictId = computed<string>({
-  get: () => {
-    if (tutorProfile.value.address.district) {
-      const district = districts.value.find((d) => d.name === tutorProfile.value.address.district)
-      if (district) {
-        return district.id
-      }
-    }
-    return ''
-  },
-  set: (value) => {
-    return value
-  }
-})
+const selectedDistrictId = ref<string>('')
 const selectedDistrict = computed<District>(
   () => districts.value.find((c) => c.id === selectedDistrictId.value)!
 )
@@ -278,22 +283,10 @@ const filteredWard = computed<Ward[]>(() => {
         )
   return result
 })
-const selectedWardId = computed<string>({
-  get: () => {
-    if (tutorProfile.value.address.ward) {
-      const ward = wards.value.find((d) => d.name === tutorProfile.value.address.ward)
-      if (ward) {
-        return ward.id
-      }
-    }
-    return ''
-  },
-  set: (value) => {
-    return value
-  }
-})
+const selectedWardId = ref<string>('')
 const selectedWard = computed<Ward>(() => wards.value.find((c) => c.id === selectedWardId.value)!)
 
+const providedCities = ref<CityResponse[]>([])
 const selectedCities = ref<string[]>([])
 const expectCity = ref<string>('')
 const selectedDistricts = ref<string[]>([])
@@ -398,7 +391,7 @@ const handleSelectDayOfWeek = (day: string) => {
   if (!existedDay) {
     selectedSchedules.value.push({
       id: day,
-      name: day,
+      name: DAYOFWEEKMAP[day],
       level2: []
     })
   }
@@ -427,7 +420,7 @@ const handleSelectSession = (session: string) => {
   if (existedDay && existedDay.level2 && !existedDay.level2.find((s) => s.id === session)) {
     existedDay.level2.push({
       id: session,
-      name: session
+      name: SESSIONMAP[session]
     })
   }
 }
@@ -475,7 +468,7 @@ const handleSelectClassLevel = (level: string) => {
       level2: [
         {
           id: level,
-          name: level,
+          name: CLASSLEVELMAP[level],
           level3: []
         }
       ]
@@ -487,7 +480,7 @@ const handleSelectClassLevel = (level: string) => {
       if (!existedLevel) {
         d.level2.push({
           id: level,
-          name: level,
+          name: CLASSLEVELMAP[level],
           level3: []
         })
       }
@@ -585,14 +578,14 @@ const handleUpdateProfile = async (values: any) => {
     districts: item.level2!.map((itemLv2) => itemLv2.name)
   }))
   updatedTutor.timeExpects = selectedSchedules.value.map((item) => ({
-    dow: item.name,
-    sessions: item.level2!.map((itemLv2) => itemLv2.name)
+    dow: item.id,
+    sessions: item.level2!.map((itemLv2) => itemLv2.id)
   }))
   updatedTutor.jobReferences = listViewSelectionSubjects.value.flatMap((item) => {
     return item.level2!.map((itemLv2) => {
       return {
-        grade: item.name,
-        class: itemLv2.name,
+        grade: item.id,
+        class: itemLv2.id,
         description: '', // Thêm giá trị mô tả nếu cần
         subjects: itemLv2.level3!.map((itemLv3) => itemLv3.id) // Đổi tên thuộc tính từ `subject` thành `subjects`
       }
@@ -632,6 +625,7 @@ const handleUpdateProfile = async (values: any) => {
     errors.value = {}
 
     if (selectedFile.value) {
+      console.log('selectedFile', selectedFile.value)
       const uploadFileRequest = getFileNameAndExtension(selectedFile.value)
       console.log('uploadFileRequest', uploadFileRequest)
       const presignedUrl = await uploadService.presignUrl(
@@ -680,9 +674,59 @@ const handleUpdateProfile = async (values: any) => {
 }
 
 onMounted(async () => {
-  cities.value = await addressService.listCities()
-  const result = await subjectService.findAll()
+  const result = await subjectService.findAll('/')
   subjects.value = result.results
+
+  const defaultQuery = getQueryParams(query.value)
+  const defaultCities = await addressService.listCities(defaultQuery)
+  cities.value = defaultCities.results
+  filteredCity.value = defaultCities.results
+
+  console.log('student profile', tutorProfile.value)
+  const city = filteredCity.value.find((c) => c.name === tutorProfile.value.address.city)
+  if (!city) {
+    const searchQuery: QueryParams = {
+      ...query.value,
+      filter: [
+        {
+          field: 'name',
+          type: FilterOperationType.IContains,
+          value: tutorProfile.value.address.city
+        }
+      ]
+    }
+    const searchQueryString = getQueryParams(searchQuery)
+    const searchCities = await addressService.listCities(searchQueryString)
+    const city = searchCities.results.find(
+      (c: CityResponse) => c.name === tutorProfile.value.address.city
+    )
+    if (city) {
+      filteredCity.value.push(city)
+      selectedCityId.value = city.id
+    }
+  } else {
+    selectedCityId.value = city.id
+  }
+  selectedDistrictId.value = filteredDistrict.value.find(
+    (d) => d.name === tutorProfile.value.address.district
+  )!.id
+  selectedWardId.value = filteredWard.value.find(
+    (w) => w.name === tutorProfile.value.address.ward
+  )!.id
+
+  const providedQuery: QueryParams = {
+    ...query.value,
+    filter: [
+      {
+        field: 'isProvided',
+        type: FilterOperationType.Eq,
+        value: true
+      }
+    ]
+  }
+  const providedQueryString = getQueryParams(providedQuery)
+  const providedResponse = await addressService.listCities(providedQueryString)
+  providedCities.value = providedResponse.results
 
   props.profile.areaExpects.map((item) => {
     const city = cities.value.find((c) => c.name === item.city)
@@ -713,8 +757,8 @@ onMounted(async () => {
   props.profile.timeExpects.map((item) => {
     selectedSchedules.value.push({
       id: item.dow,
-      name: item.dow,
-      level2: item.sessions.map((s) => ({ id: s, name: s }))
+      name: DAYOFWEEKMAP[item.dow],
+      level2: item.sessions.map((s) => ({ id: s, name: SESSIONMAP[s] }))
     })
   })
 
@@ -723,11 +767,11 @@ onMounted(async () => {
     if (existedGrade < 0)
       listViewSelectionSubjects.value.push({
         id: item.grade,
-        name: item.grade,
+        name: CONVETGRADEMAP[item.grade],
         level2: [
           {
             id: item.class,
-            name: item.class,
+            name: CLASSLEVELMAP[item.class],
             level3: item.subjects.map((s) => ({ id: s.id, name: s.name }))
           }
         ]
@@ -735,7 +779,7 @@ onMounted(async () => {
     else
       listViewSelectionSubjects.value[existedGrade].level2!.push({
         id: item.class,
-        name: item.class,
+        name: CLASSLEVELMAP[item.class],
         level3: item.subjects.map((s) => ({ id: s.id, name: s.name }))
       })
     item.subjects.map((subject) => {
@@ -759,18 +803,18 @@ defineComponent({ name: 'TutorForm' })
     class="grid max-h-full w-full grid-flow-row-dense content-around justify-center justify-self-center overflow-hidden overflow-y-scroll px-28 py-6 shadow-lg shadow-gray-400"
   >
     <div class="form-header">
-      <h1>Profile</h1>
+      <h1>Hồ sơ</h1>
     </div>
     <!-- Personal information -->
     <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
       <font-awesome-icon :icon="['fas', 'user']" size="2x" />
-      <span class="text-lg"> Personal Information</span>
+      <span class="text-lg">Thông tin cá nhân</span>
     </div>
     <div class="form-body">
       <div class="grid grid-cols-2 gap-5">
         <!-- Firstname -->
         <div class="form-field">
-          <label for="" class="form-label">First Name</label>
+          <label for="" class="form-label">Tên</label>
           <Field name="firstName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -782,14 +826,14 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="First name"
+              placeholder="Tên"
             />
           </Field>
           <ErrorMessage name="firstName" class="text-sm text-red-500" />
         </div>
         <!-- Lastname -->
         <div class="form-field">
-          <label for="" class="form-label">Last Name</label>
+          <label for="" class="form-label">Họ</label>
           <Field name="lastName" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -801,22 +845,27 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Last name"
+              placeholder="Họ"
             />
           </Field>
           <ErrorMessage name="lastName" class="text-sm text-red-500" />
         </div>
         <!-- Phone -->
         <div class="form-field">
-          <label for="" class="form-label">Phone</label>
-          <Field name="phone" v-slot="{ field, meta }">
+          <label for="" class="form-label">Số điện thoại</label>
+          <Field
+            name="phone"
+            v-slot="{ field, meta }"
+            :validate-on-input="true"
+            :validate-on-model-update="false"
+          >
             <vue-tel-input v-model="field.value" v-bind="field">{{ field.value }}</vue-tel-input>
           </Field>
           <ErrorMessage name="phone" class="text-sm text-red-500" />
         </div>
         <!-- Date of birth -->
         <div class="form-field">
-          <label for="dob" class="form-label">Date of Birth</label>
+          <label for="dob" class="form-label">Ngày sinh</label>
           <Field name="dob" v-slot="{ field, meta }" :validate-on-input="true">
             <VueDatePicker
               mode="date"
@@ -824,6 +873,7 @@ defineComponent({ name: 'TutorForm' })
               v-bind="field"
               :format="format"
               :enable-time-picker="false"
+              text-input
               :auto-apply="true"
             />
           </Field>
@@ -831,7 +881,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <!-- Gender -->
         <div class="form-field">
-          <label for="gender" class="form-label"> Select Gender </label>
+          <label for="gender" class="form-label">Giới tính</label>
           <Field name="gender" v-slot="{ field, meta }" :validate-on-input="true">
             <Listbox :default-value="tutorProfile.gender" v-bind="field">
               <div class="relative mt-1">
@@ -839,7 +889,7 @@ defineComponent({ name: 'TutorForm' })
                   class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm"
                 >
                   <span class="block truncate capitalize">{{
-                    tutorProfile.gender ?? field.value ?? 'Select a gender'
+                    GENDERMAP[field.value] ?? 'Chọn giới tính'
                   }}</span>
                   <span
                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
@@ -870,7 +920,7 @@ defineComponent({ name: 'TutorForm' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.MALE }}</span
+                          >{{ GENDERMAP[Gender.MALE] }}</span
                         >
                         <span
                           v-if="selected"
@@ -895,7 +945,7 @@ defineComponent({ name: 'TutorForm' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.FEMALE }}</span
+                          >{{ GENDERMAP[Gender.FEMALE] }}</span
                         >
                         <span
                           v-if="selected"
@@ -920,7 +970,7 @@ defineComponent({ name: 'TutorForm' })
                       >
                         <span
                           :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']"
-                          >{{ Gender.OTHER }}</span
+                          >{{ GENDERMAP[Gender.OTHER] }}</span
                         >
                         <span
                           v-if="selected"
@@ -941,7 +991,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <!-- ID Document Number -->
         <div class="form-field">
-          <label for="" class="form-label">ID Document Number</label>
+          <label for="" class="form-label">CMND/CCCD</label>
           <Field name="identificationId" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -960,7 +1010,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <!-- Expected Salary -->
         <div class="form-field">
-          <label for="" class="form-label">Expected Salary</label>
+          <label for="" class="form-label">Mức lương mong muốn</label>
           <Field name="expectSalary" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -981,7 +1031,7 @@ defineComponent({ name: 'TutorForm' })
       <div class="grid grid-cols-1">
         <!-- Address (Street) -->
         <div class="form-field">
-          <label for="address.address" class="form-label">Address</label>
+          <label for="address.address" class="form-label">Địa chỉ</label>
           <Field name="address.address" v-slot="{ field, meta }" :validate-on-input="true">
             <input
               v-bind="field"
@@ -1002,7 +1052,7 @@ defineComponent({ name: 'TutorForm' })
       <div class="grid grid-cols-3 gap-5">
         <!-- City -->
         <div class="form-field">
-          <label class="form-label">City</label>
+          <label class="form-label">Tỉnh/Thành phố</label>
           <Field name="address.city" v-slot="{ field, meta }" :validate-on-input="true">
             <Combobox v-bind="field" v-model="selectedCityId">
               <div class="relative mt-1">
@@ -1011,7 +1061,7 @@ defineComponent({ name: 'TutorForm' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(selectedCityId) => selectedCity?.name || 'Select a city'"
+                    :display-value="(selectedCityId) => selectedCity?.name || 'Chọn tỉnh/thành phố'"
                     @change="queryCityName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -1072,7 +1122,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <!-- District -->
         <div class="form-field">
-          <label for="address.district" class="form-label">District</label>
+          <label for="address.district" class="form-label">Quận/Huyện</label>
           <Field name="address.district" v-slot="{ field, meta }" :validate-on-input="true">
             <Combobox v-bind="field" v-model="selectedDistrictId" v-if="selectedCityId">
               <div class="relative mt-1">
@@ -1081,7 +1131,7 @@ defineComponent({ name: 'TutorForm' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(se) => selectedDistrict?.name || 'Select a district'"
+                    :display-value="(se) => selectedDistrict?.name || 'Chọn quận/huyện'"
                     @change="queryDistrictName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -1101,7 +1151,7 @@ defineComponent({ name: 'TutorForm' })
                       v-if="filteredDistrict.length === 0 && queryDistrictName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -1137,13 +1187,13 @@ defineComponent({ name: 'TutorForm' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Please select a city</p>
+            <p v-else>Vui lòng chọn thành phố trước</p>
           </Field>
           <ErrorMessage name="address.district" class="text-sm text-red-500" />
         </div>
         <!-- Ward -->
         <div class="form-field">
-          <label for="address.ward" class="form-label">Ward</label>
+          <label for="address.ward" class="form-label">Xã/Phường</label>
           <Field name="address.ward" v-slot="{ field, meta }" :validate-on-input="true">
             <Combobox v-bind="field" v-model="selectedWardId" v-if="selectedDistrictId">
               <div class="relative mt-1">
@@ -1152,7 +1202,7 @@ defineComponent({ name: 'TutorForm' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(se) => selectedWard?.name || 'Select a ward'"
+                    :display-value="(se) => selectedWard?.name || 'Chọn xã phường'"
                     @change="queryWardName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -1172,7 +1222,7 @@ defineComponent({ name: 'TutorForm' })
                       v-if="filteredDistrict.length === 0 && queryWardName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Nothing found.
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -1208,14 +1258,14 @@ defineComponent({ name: 'TutorForm' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Please select a district</p>
+            <p v-else>Vui lòng chọn quận/huyện trước</p>
           </Field>
           <ErrorMessage name="address.ward" class="text-sm text-red-500" />
         </div>
       </div>
       <div class="grid grid-cols-1">
         <div class="form-field">
-          <label for="description" class="form-label">Description</label>
+          <label for="description" class="form-label">Mô tả bản thân</label>
           <Field name="description" v-slot="{ field, meta }" :validate-on-input="true">
             <textarea
               v-bind="field"
@@ -1227,7 +1277,7 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Description"
+              placeholder="Mô tả bản thân"
             ></textarea>
           </Field>
           <ErrorMessage name="description" class="text-sm text-red-500" />
@@ -1236,12 +1286,12 @@ defineComponent({ name: 'TutorForm' })
       <!-- Educational Qualification -->
       <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
         <font-awesome-icon :icon="['fas', 'graduation-cap']" size="2xl" style="color: #000000" />
-        <span class="text-lg"> Educational Qualification</span>
+        <span class="text-lg">Trình độ học vấn</span>
       </div>
       <div class="grid grid-cols-2 gap-5">
         <!-- Degree -->
         <div class="form-field">
-          <label for="educationalQualification.degree" class="form-label">Degree</label>
+          <label for="educationalQualification.degree" class="form-label">Trình độ</label>
           <Field
             name="educationalQualification.degree"
             v-slot="{ field, meta }"
@@ -1257,14 +1307,14 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Degree"
+              placeholder="Trình độ"
             />
           </Field>
           <ErrorMessage name="educationalQualification.degree" class="text-sm text-red-500" />
         </div>
         <!-- Major -->
         <div class="form-field">
-          <label for="educationalQualification.major" class="form-label">Major</label>
+          <label for="educationalQualification.major" class="form-label">Chuyên ngành</label>
           <Field
             name="educationalQualification.major"
             v-slot="{ field, meta }"
@@ -1280,7 +1330,7 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="Major"
+              placeholder="Chuyên ngành"
             />
           </Field>
           <ErrorMessage name="educationalQualification.major" class="text-sm text-red-500" />
@@ -1289,7 +1339,9 @@ defineComponent({ name: 'TutorForm' })
       <div class="grid grid-cols-3 gap-5">
         <!-- University -->
         <div class="form-field">
-          <label for="educationalQualification.university" class="form-label">University</label>
+          <label for="educationalQualification.university" class="form-label"
+            >Đại học/Cơ quan</label
+          >
           <Field
             name="educationalQualification.university"
             v-slot="{ field, meta }"
@@ -1305,14 +1357,14 @@ defineComponent({ name: 'TutorForm' })
                   : 'border-gray-300',
                 !meta.valid && meta.touched ? 'border-red-500' : ''
               ]"
-              placeholder="University"
+              placeholder="Cơ quan/Đại học"
             />
           </Field>
           <ErrorMessage name="educationalQualification.university" class="text-sm text-red-500" />
         </div>
         <!-- Start Date -->
         <div class="form-field">
-          <label for="educationalQualification.startYear" class="form-label">Start Year</label>
+          <label for="educationalQualification.startYear" class="form-label">Năm bắt đầu</label>
           <Field
             name="educationalQualification.startYear"
             v-slot="{ field, meta }"
@@ -1331,7 +1383,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <!-- End Date -->
         <div class="form-field">
-          <label for="educationalQualification.endYear" class="form-label">End Year</label>
+          <label for="educationalQualification.endYear" class="form-label">Năm kết thúc</label>
           <Field
             name="educationalQualification.endYear"
             v-slot="{ field, meta }"
@@ -1353,7 +1405,7 @@ defineComponent({ name: 'TutorForm' })
         <!-- Certificate image -->
         <div class="form-field">
           <label for="educationalQualification.certificateUrl" class="form-label"
-            >Certificate image</label
+            >Hình ảnh bằng cấp</label
           >
           <Field
             name="educationalQualification.certificateUrl"
@@ -1383,13 +1435,13 @@ defineComponent({ name: 'TutorForm' })
       <!-- Area Expected-->
       <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
         <font-awesome-icon :icon="['fas', 'map-location-dot']" size="2xl" style="color: #0d0d0d" />
-        <span class="text-lg"> Area</span>
+        <span class="text-lg">Khu vực làm việc</span>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="grid grid-flow-row-dense items-start gap-6">
           <!-- City -->
           <div class="grid grid-flow-row-dense items-start">
-            <label for="areaExpect.city" class="form-label">City</label>
+            <label for="areaExpect.city" class="form-label">Tỉnh/Thành phố</label>
             <AppListSelection
               :list="cities"
               :selected="selectedCities"
@@ -1401,14 +1453,14 @@ defineComponent({ name: 'TutorForm' })
           </div>
           <!-- District -->
           <div class="grid grid-flow-row-dense items-start">
-            <label for="areaExpect.district" class="form-label">District</label>
+            <label for="areaExpect.district" class="form-label">Quận/Huyện</label>
             <AppListSelection
               v-if="expectDistricts.length > 0"
               :list="expectDistricts"
               :selected="selectedDistricts"
               @select="handleSelectExpectDistrict"
             />
-            <p v-else>Please select city first</p>
+            <p v-else>Vui lòng chọn thành phố trước</p>
             <span v-if="errors.areaExpect && errors.areaExpect[0].district">{{
               errors.areaExpect.district
             }}</span>
@@ -1416,7 +1468,7 @@ defineComponent({ name: 'TutorForm' })
         </div>
         <div class="flex flex-col">
           <div class="grid grid-flow-row-dense">
-            <label for="" class="form-label">Selections</label>
+            <label for="" class="form-label">Các lựa chọn</label>
             <AppSelectionLevel
               :list="listViewAddressSelections"
               @delete-lv1="handleRemoveExpectCity"
@@ -1431,13 +1483,13 @@ defineComponent({ name: 'TutorForm' })
       <!-- Expected Schedules -->
       <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
         <font-awesome-icon :icon="['fas', 'map-location-dot']" size="2xl" style="color: #0d0d0d" />
-        <span class="text-lg"> Expected schedules</span>
+        <span class="text-lg">Thời khóa biểu mong muốn</span>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="grid grid-flow-row-dense items-start gap-2">
           <!-- Day of week -->
           <div class="gird grid-flow-row-dense">
-            <label for="timeExpect.dow" class="form-label">Day of week</label>
+            <label for="timeExpect.dow" class="form-label">Thứ trong tuần</label>
             <div class="grid grid-cols-2 gap-2">
               <li
                 v-for="day in daysOfWeek"
@@ -1446,7 +1498,7 @@ defineComponent({ name: 'TutorForm' })
                 :class="[selectedDay === day ? 'active-expected-items' : 'expected-items']"
                 @click="handleSelectDayOfWeek(day)"
               >
-                <p>{{ day }}</p>
+                <p>{{ DAYOFWEEKMAP[day] }}</p>
               </li>
             </div>
             <span v-if="errors.timeExpect && errors.timeExpect[0].dow">{{
@@ -1455,7 +1507,7 @@ defineComponent({ name: 'TutorForm' })
           </div>
           <!-- Session -->
           <div class="grid grid-flow-row-dense">
-            <label for="" class="form-label">Session</label>
+            <label for="" class="form-label">Buổi</label>
             <div class="grid grid-cols-2 gap-2">
               <li
                 v-for="session in sessions"
@@ -1464,7 +1516,7 @@ defineComponent({ name: 'TutorForm' })
                 class="expected-items"
                 @click="handleSelectSession(session)"
               >
-                <p>{{ session }}</p>
+                <p>{{ SESSIONMAP[session] }}</p>
               </li>
             </div>
             <span v-if="errors.timeExpect && errors.timeExpect[0].session">{{
@@ -1473,7 +1525,7 @@ defineComponent({ name: 'TutorForm' })
           </div>
         </div>
         <div class="grid grid-flow-row-dense">
-          <label for="" class="form-label">Selections</label>
+          <label for="" class="form-label">Các lựa chọn</label>
           <AppSelectionLevel
             :list="selectedSchedules"
             @delete-lv1="handleRemoveDayOfWeek"
@@ -1484,12 +1536,12 @@ defineComponent({ name: 'TutorForm' })
       <!-- Expected Subject -->
       <div class="mb-5 mt-10 flex flex-auto justify-start gap-5">
         <font-awesome-icon :icon="['fas', 'book']" size="2xl" style="color: #0d0d0d" />
-        <span class="text-lg"> Expected Subject</span>
+        <span class="text-lg">Môn học có thể dạy</span>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="grid grid-flow-row-dense gap-3">
           <div class="grid grid-flow-row-dense">
-            <label for="" class="form-label">Class</label>
+            <label for="" class="form-label">Lớp</label>
             <div class="grid grid-cols-2 gap-2">
               <li
                 v-for="classLevel in classLevels"
@@ -1500,7 +1552,7 @@ defineComponent({ name: 'TutorForm' })
                 ]"
                 @click="handleSelectClassLevel(classLevel)"
               >
-                <p>{{ classLevel }}</p>
+                <p>{{ CLASSLEVELMAP[classLevel] }}</p>
               </li>
             </div>
             <span v-if="errors.jobReference && errors.jobReference[0].class">{{
@@ -1508,7 +1560,7 @@ defineComponent({ name: 'TutorForm' })
             }}</span>
           </div>
           <div class="grid grid-flow-row-dense">
-            <label for="" class="form-label">Subject</label>
+            <label for="" class="form-label">Môn học</label>
             <AppListSelection
               :list="subjects"
               :selected="expectSubjects"
@@ -1520,7 +1572,7 @@ defineComponent({ name: 'TutorForm' })
           </div>
         </div>
         <div class="grid grid-flow-row-dense self-start">
-          <label for="" class="form-label">Selections</label>
+          <label for="" class="form-label">Các lựa Chọn</label>
           <AppSelectionLevel
             :list="listViewSelectionSubjects"
             @delete-lv1="handleRemoveGrade"
@@ -1531,11 +1583,7 @@ defineComponent({ name: 'TutorForm' })
       </div>
       <div class="form-footer">
         <div class="flex w-8/12 flex-auto justify-center justify-self-center">
-          <AppButton
-            :status="ButtonStatus.SUCCESS"
-            :type="ButtonType.FULL_FILL"
-            :content="'Next'"
-          />
+          <AppButton :status="ButtonStatus.SUCCESS" :type="ButtonType.FULL_FILL" :content="'Gửi'" />
         </div>
       </div>
     </div>

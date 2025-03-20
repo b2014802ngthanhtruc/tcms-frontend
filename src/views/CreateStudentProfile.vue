@@ -14,8 +14,8 @@ const handleStudentCreateProfile = async (value: StudentCompleteRegisterRequest)
   console.log('Create profile')
   try {
     await authStudentService.register(value)
-    toast.success('Create profile successfully!')
-    router.push({ name: 'home' })
+    toast.success('Tạo hồ sơ mới thành công!')
+    router.replace({ name: 'home' })
   } catch (error) {
     const err = error as AxiosError
     const data: any = err.response?.data
@@ -24,7 +24,7 @@ const handleStudentCreateProfile = async (value: StudentCompleteRegisterRequest)
 }
 
 const handleReturnHome = () => {
-  router.push({ name: 'home' })
+  router.replace({ name: 'home' })
 }
 </script>
 <template>
@@ -34,7 +34,7 @@ const handleReturnHome = () => {
     </button>
     <div class="mt-3 flex flex-row justify-center p-4">
       <StudentCompleteProfile
-        :title="'Create Profile'"
+        :title="'Tạo hồ sơ mới'"
         @completeStudentProfile="handleStudentCreateProfile"
       />
     </div>

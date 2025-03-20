@@ -9,8 +9,8 @@ class SubjectService {
     this.http = new Http(API_URL).getInstance()
   }
 
-  async findAll(): Promise<Pagination<Subject>> {
-    return (await this.http.get(`${GENERAL_SUBJECT_API}/`)).data
+  async findAll(query: string): Promise<Pagination<Subject>> {
+    return (await this.http.get(`${GENERAL_SUBJECT_API}${query}`)).data
   }
 }
 

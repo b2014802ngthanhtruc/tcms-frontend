@@ -20,7 +20,15 @@ export const GRADEMAP: Record<string, string> = {
   [ClassLevel.CLASS_9]: Grade.JUNIORHIGHSCHOOL,
   [ClassLevel.CLASS_10]: Grade.HIGHSCHOOL,
   [ClassLevel.CLASS_11]: Grade.HIGHSCHOOL,
-  [ClassLevel.CLASS_12]: Grade.HIGHSCHOOL
+  [ClassLevel.CLASS_12]: Grade.HIGHSCHOOL,
+  [ClassLevel.FRESHSCHOOL]: Grade.PRESCHOOL
+}
+
+export const CONVETGRADEMAP: Record<string, string> = {
+  [Grade.PRESCHOOL]: 'Mẫu giáo',
+  [Grade.PRIMARYSCHOOL]: 'Tiểu học',
+  [Grade.JUNIORHIGHSCHOOL]: 'Trung học cơ sở',
+  [Grade.HIGHSCHOOL]: 'Trung học phổ thông'
 }
 
 export const SCOPEMAP: Record<string, string> = {
@@ -33,7 +41,7 @@ export const PAYMENTFREQUENCYMAP: Record<string, string> = {
   [PaymentFrequency.DAILY]: 'Hàng buổi',
   [PaymentFrequency.WEEKLY]: 'Hàng tuần',
   [PaymentFrequency.MONTHLY]: 'Hàng tháng',
-  [PaymentFrequency.NEGOTIAL]: 'Thương lượng'
+  [PaymentFrequency.NEGOTIAL]: 'Thỏa thuận'
 }
 
 export const CLASSSTATUSMAP: Record<string, string> = {

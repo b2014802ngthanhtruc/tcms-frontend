@@ -1,21 +1,83 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import {
+  computed,
+  inject,
+  onBeforeMount,
+  onMounted,
+  provide,
+  ref,
+  watch,
+  type InjectionKey
+} from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/shared/AppHeader.vue'
 import AppFooter from '@/components/shared/AppFooter.vue'
+import type { UserLogin } from './types'
+import { getUserLoginFromLS } from './utils'
+import AppHeaderManager from './components/shared/AppHeaderManager.vue'
+import AppHeaderAdminManager from './components/shared/AppHeaderAdminManager.vue'
 
-// Sử dụng useRoute để truy cập thông tin route hiện tại
 const route = useRoute()
+const router = useRouter()
+const isRouteReady = ref(false)
+router.isReady().then(() => {
+  isRouteReady.value = true
+  console.log('Route is ready:', router.currentRoute.value.path)
+})
+
+const user = ref<UserLogin | undefined>(undefined)
+provide('userLogin', user)
+
+onBeforeMount(() => {
+  user.value = getUserLoginFromLS()
+  console.log('user', user.value)
+  console.log('isAuthRoute', isAuthRoute.value)
+  console.log('route', route.path)
+})
+
+const handleUpdateUser = () => {
+  console.log('update user')
+  user.value = getUserLoginFromLS()
+  console.log('user', user.value)
+}
+
+const handleLogout = () => {
+  console.log('logout')
+  user.value = undefined
+}
 
 // Kiểm tra nếu đường dẫn hiện tại chứa /auth
-const isAuthRoute = computed(() => route.path.includes('/auth'))
-const isWelcome = computed(() => route.path.includes('/welcome'))
+const isAuthRoute = computed(() => isRouteReady.value && route.path.includes('/auth'))
+const isWelcome = computed(() => isRouteReady.value && route.path.includes('/welcome'))
+const isManager = computed(() => isRouteReady.value && route.path.includes('/manager'))
+const isAdminManager = computed(() => isRouteReady.value && route.path.includes('/admin/manager'))
+const isGeneral = computed(() => {
+  console.log('route', route.path)
+  console.log('isAuthRoute', isAuthRoute.value)
+  console.log('isWelcome', isWelcome.value)
+  console.log('isManager', isManager.value)
+  console.log('isAdminManager', isAdminManager.value)
+  return (
+    isRouteReady.value &&
+    !isAuthRoute.value &&
+    !isWelcome.value &&
+    !isManager.value &&
+    !isAdminManager.value
+  )
+})
 </script>
 
 <template>
-  <AppHeader v-if="!isAuthRoute && !isWelcome" />
+  <AppHeaderAdminManager v-if="isAdminManager" :is-mounted="isAdminManager" />
+  <AppHeaderManager v-if="isManager && !isAdminManager" :is-mounted="isManager" />
+  <AppHeader
+    v-if="isGeneral"
+    :is-mounted="isGeneral ?? false"
+    @login="handleUpdateUser"
+    @logout="handleLogout"
+  />
   <RouterView />
-  <AppFooter v-if="!isAuthRoute && !isWelcome" />
+  <AppFooter v-if="isRouteReady && !isAuthRoute && !isWelcome && !isAdminManager" />
 </template>
 
 <style scoped>
@@ -23,66 +85,3 @@ footer {
   @apply static bottom-0;
 }
 </style>
-<!-- <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style> -->

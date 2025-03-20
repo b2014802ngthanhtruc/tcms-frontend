@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineEmits, defineComponent, onMounted, computed } from 'vue'
+import { ref, defineEmits, defineComponent, onMounted, computed, watch } from 'vue'
 import { useField, Field, Form, ErrorMessage, defineRule } from 'vee-validate'
 import { ButtonStatus, ButtonType } from '@/enums'
 import AppButton from '../shared/AppButton.vue'
@@ -11,34 +11,26 @@ const codeArray = ref(new Array(6).fill(''))
 const errorMessage = ref('')
 const codeIndex = ref(0)
 // Rules
-defineRule('validateCode', (value: string) => {
-  if (value.length === 0) {
-    errorMessage.value = 'Verification code is required.'
-    return 'Verification code is required.'
-  }
-  if (value.length > 1) {
-    errorMessage.value = 'Verification code must be a single digit.'
-    return 'Code must be a single digit'
-  }
-  if (RegExp(/^[0-9]+$/).test(value) === false) {
-    errorMessage.value = 'Verification code must be a number character.'
-    return 'Code must be a number character'
-  }
-  const emptyIndex = codeArray.value.findIndex((item) => item === '')
-  if (emptyIndex >= 0 && emptyIndex < 5) {
-    errorMessage.value = 'Verification code is required.'
-    return false
-  }
-  errorMessage.value = ''
-  return true
+const VerificationSchema = yup.object({
+  code: yup
+    .array(
+      yup
+        .string()
+        .trim()
+        .max(1, 'Mã xác thực chỉ được nhập 1 ký tự mỗi ô')
+        .required('Mã xác thực là bắt buộc')
+    )
+    .required('Mã xác thực là bắt buộc')
 })
-
+const isValid = ref(false)
 // Computed
-const error = computed(() => {
-  return errorMessage.value !== ''
-})
+const validate = async () => {
+  const result = await VerificationSchema.isValid({ code: codeArray.value })
+  isValid.value = result
+  console.log('isValid', isValid.value)
+}
 // Methods
-
+watch(codeArray, validate, { deep: true })
 // Methods
 function resendCode() {
   emit('resend-code')
@@ -91,13 +83,18 @@ defineComponent({ name: 'VerifyEmail' })
       class="flex h-full w-full flex-col justify-center space-y-10 rounded-lg bg-white p-6 shadow-md"
     >
       <!-- Title -->
-      <h2 class="mb-6 text-center text-3xl font-bold text-black">Verify Account</h2>
+      <h2 class="mb-6 text-center text-3xl font-bold text-black">Xác thực tài khoản</h2>
 
       <!-- Subtitle -->
-      <p class="mb-6 text-center text-gray-500">Please enter the verify code</p>
+      <p class="mb-6 text-center text-gray-500">Vui lòng nhập mã xác thực</p>
 
       <!-- Form -->
-      <Form @submit="handleVerify" class="space-y-8" v-slot="{ errors }">
+      <Form
+        @submit="handleVerify"
+        class="space-y-8"
+        :validation-schema="VerificationSchema"
+        v-slot="{ errors }"
+      >
         <!-- Input Fields for Verification Code -->
         <div class="grid grid-flow-row justify-items-center">
           <div class="flex justify-center space-x-4">
@@ -106,7 +103,6 @@ defineComponent({ name: 'VerifyEmail' })
               v-slot="{ field, meta }"
               :key="index"
               :name="`code[${index - 1}]`"
-              rules="validateCode"
               v-model="codeArray[index - 1]"
               :validate-on-input="true"
               :validate-on-blur="true"
@@ -116,7 +112,6 @@ defineComponent({ name: 'VerifyEmail' })
               <input
                 type="number"
                 v-bind="field"
-                maxlength="1"
                 @input="focusNext($event, index - 1)"
                 @keydown="focusPrevious($event, index - 1)"
                 class="h-12 w-12 border border-gray-300 text-center text-xl focus:border-blue-500 focus:outline-none"
@@ -124,18 +119,18 @@ defineComponent({ name: 'VerifyEmail' })
             </Field>
           </div>
           <!-- Error Message -->
-          <span class="text-red-500" v-if="errors">{{ errorMessage }}</span>
+          <ErrorMessage :name="`code[${codeIndex}]`" class="text-sm text-red-500" />
         </div>
 
         <!-- Resend Code Link -->
         <div class="mb-6 text-center">
-          <p class="text-gray-500">Can’t receive code?</p>
+          <p class="text-gray-500">Không nhận được mã?</p>
           <button
             type="button"
             @click="resendCode"
             class="mt-2 text-blue-500 hover:underline focus:outline-none"
           >
-            Resend code
+            Gửi lại mã
           </button>
         </div>
 
@@ -143,16 +138,16 @@ defineComponent({ name: 'VerifyEmail' })
         <div class="grid w-full grid-flow-col-dense content-center">
           <div class="mx-auto w-5/12">
             <AppButton
-              v-if="!error"
+              v-if="isValid"
               :status="ButtonStatus.SUCCESS"
               :type="ButtonType.FULL_FILL"
-              :content="'Next'"
+              :content="'Tiếp tục'"
             />
             <AppButton
               v-else
               :status="ButtonStatus.DISABLED"
               :type="ButtonType.FULL_FILL"
-              :content="'Next'"
+              :content="'Tiếp tục'"
             />
           </div>
         </div>

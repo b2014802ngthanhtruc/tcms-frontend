@@ -47,7 +47,7 @@ defineComponent({ name: 'AppSelectionLevel' })
           class="group my-auto flex flex-auto gap-1 rounded-xl px-2 py-1 hover:bg-gray-100"
           @click="handleDeleteLv1(item.id)"
         >
-          <p class="invisible text-sm group-hover:visible">Remove</p>
+          <p class="invisible text-sm group-hover:visible">Xóa</p>
           <font-awesome-icon :icon="['fas', 'circle-xmark']" style="color: #f20707" />
         </button>
       </div>
@@ -89,7 +89,7 @@ defineComponent({ name: 'AppSelectionLevel' })
       v-else
       class="group grid w-full grid-flow-row-dense justify-center bg-white p-2 capitalize first:rounded-t-lg last:rounded-b-lg"
     >
-      <p>No data</p>
+      <p class="text-sm text-gray-500">Không có lựa chọn nào.</p>
     </li>
   </ul>
 </template>

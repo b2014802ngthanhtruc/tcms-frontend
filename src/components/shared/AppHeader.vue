@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { defineComponent, onMounted, ref, watchEffect } from 'vue'
+import { defineComponent, inject, onMounted, ref, watchEffect, type Ref } from 'vue'
 import Modal from '../auth/Modal.vue'
 import LoginForm from '../auth/LoginForm.vue'
 import ChooseProfile from '../auth/ChooseProfile.vue'
 import AuthGeneralService from '@/services/auth/auth-general.service'
-import type { ChooseProfileResponse, ResetPasswordRequest } from '@/types'
+import type { ChooseProfileResponse, ResetPasswordRequest, UserLogin } from '@/types'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
 import type { AxiosError } from 'axios'
@@ -28,11 +28,18 @@ import type { Tutor } from '@/types/tutor.type'
 import TutorService from '@/services/tutor/tutor.service'
 import VerifyEmail from '../auth/VerifyEmail.vue'
 import { useRouter } from 'vue-router'
+import { watch } from 'vue'
+import { GET_IMG_API } from '@/constants/eviroment.constant'
+
+const props = defineProps<{
+  isMounted: boolean
+}>()
 
 const isOpenModal = ref(false)
 const step = ref(1)
 const isLogin = ref(false)
 const email = ref('')
+const userLogin = inject<Ref<UserLogin | undefined>>('userLogin')
 const authService = new AuthGeneralService()
 const authTutorService = new AuthTutorService()
 const authStudentService = new AuthStudentService()
@@ -48,21 +55,45 @@ const user = ref<ChooseProfileResponse>({
 const student = ref<Student | null>(null)
 const tutor = ref<Tutor | null>(null)
 const router = useRouter()
+const emit = defineEmits(['logout', 'login'])
 
 onMounted(async () => {
+  console.log('isMounted', props.isMounted)
+  if (!props.isMounted) return
   isLogin.value = checkIsLogin()
-  if (isLogin.value) {
-    const userLoggedIn = getUserLoginFromLS()
-    console.log('userLoggedIn', userLoggedIn)
-    if (userLoggedIn.isStudent) {
-      student.value = await authStudentService.login(userLoggedIn.userId, userLoggedIn.id)
+  if (isLogin.value && userLogin?.value) {
+    console.log('userLogin', userLogin?.value)
+    if (userLogin?.value.isStudent) {
+      await authStudentService.login(userLogin?.value.userId, userLogin?.value.id)
       student.value = await studentService.getProfile()
-    } else {
-      tutor.value = await authTutorService.login(userLoggedIn.userId)
+      if (userLogin && userLogin.value) {
+        userLogin.value.avatar = student.value!.avatar
+        userLogin.value.username = student.value!.fullName
+      }
+    }
+    if (userLogin?.value.isTutor) {
+      await authTutorService.login(userLogin?.value.userId)
       tutor.value = await tutorService.getProfile()
+      if (userLogin && userLogin.value) {
+        userLogin.value.avatar = tutor.value!.avatar
+        userLogin.value.username = tutor.value!.fullName
+      }
+    }
+    if (userLogin && userLogin.value.isAdmin) {
+      handleLogout()
     }
   }
 })
+
+const handleGotoManager = () => {
+  if (userLogin?.value?.isTutor) {
+    router.push({ name: 'tutor-manager' })
+  }
+  if (userLogin?.value?.isStudent) {
+    router.push({ name: 'student-manager' })
+  }
+}
+
 const handleOpenModalLogin = () => {
   isOpenModal.value = true
 }
@@ -81,12 +112,13 @@ const handleLogin = async (value: { email: string; password: string }) => {
     const result = await authService.getStarted(value.email)
     if (!result.isRegistered) {
       toast.error('Email hoặc mật khẩu không chính xác')
+      return
     }
     setUserIdToLS(result.id)
-    if (!result.isVerifiedEmail) {
-      toast.error('Email chưa được xác thực. Vui lòng xác thực email.')
-      await authService.resendCode(result.id)
-      step.value = 5
+    if (!result.isCompleteSignup) {
+      toast.warning('Vui lọc hoàn thành đăng ký hồ sơ!')
+      router.push({ name: 'register' })
+      return
     }
     user.value = await authService.login(value.email, value.password)
     step.value = 2
@@ -105,11 +137,15 @@ const handleStudentLogin = async (id: string) => {
     saveUserLoginToLS({
       id: student.value!.id,
       userId: student.value!.userId,
+      username: student.value!.fullName,
+      avatar: student.value!.avatar,
       isStudent: true,
-      isTutor: false
+      isTutor: false,
+      isAdmin: false
     })
     isOpenModal.value = false
     isLogin.value = true
+    emit('login')
   } catch (error) {
     const err = error as AxiosError
     const data: any = err.response?.data
@@ -124,12 +160,16 @@ const handleTutorLogin = async (id: string) => {
     saveUserLoginToLS({
       id: tutor.value!.id,
       userId: getUserIdFromLS(),
+      username: tutor.value!.fullName,
+      avatar: tutor.value!.avatar,
       isStudent: false,
-      isTutor: true
+      isTutor: true,
+      isAdmin: false
     })
     console.log('tutor', tutor.value)
     isOpenModal.value = false
     isLogin.value = true
+    emit('login')
   } catch (error) {
     const err = error as AxiosError
     const data: any = err.response?.data
@@ -174,6 +214,7 @@ const handleResetPassword = async ({ code, password }: ResetPasswordRequest) => 
 const handleResendResetPasswordCode = async () => {
   try {
     await authService.forgotPassword(email.value)
+    toast.success('Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra lại email!')
   } catch (error) {
     const err = error as AxiosError
     const data: any = err.response?.data
@@ -185,37 +226,24 @@ const handleLogout = () => {
   isLogin.value = false
   step.value = 1
   clearLS()
-}
-
-const handleVerifyEmail = async (value: any) => {
-  const userId = getUserIdFromLS()
-  try {
-    await authService.verifyEmail(userId, value)
-    step.value = 1
-  } catch (error) {
-    const err = error as AxiosError
-    const data: any = err.response?.data
-    toast.error(data.message)
-  }
-}
-
-const handleResendCode = async () => {
-  const userId = getUserIdFromLS()
-  try {
-    await authService.resendCode(userId)
-  } catch (error) {
-    const err = error as AxiosError
-    const data: any = err.response?.data
-    toast.error(data.message)
-  }
+  emit('logout')
 }
 
 const handleStudentCreateProfile = async () => {
   router.push({ name: 'student-create-profile' })
 }
 
+const handleTutorCreateProfile = async () => {
+  router.push({ name: 'tutor-create-profile' })
+}
+
 const handleGotoProfile = () => {
-  router.push({ name: 'tutor-profile' })
+  if (userLogin && userLogin.value?.isTutor) {
+    router.push({ name: 'tutor-profile' })
+  }
+  if (userLogin && userLogin.value?.isStudent) {
+    router.push({ name: 'student-profile' })
+  }
 }
 
 defineComponent({ name: 'AppHeader' })
@@ -238,6 +266,7 @@ defineComponent({ name: 'AppHeader' })
           @choose-student-profile="handleStudentLogin"
           @choose-tutor-profile="handleTutorLogin"
           @student-create-profile="handleStudentCreateProfile"
+          @tutor-create-profile="handleTutorCreateProfile"
         />
         <ForgotPassword
           v-if="step === 3"
@@ -249,11 +278,6 @@ defineComponent({ name: 'AppHeader' })
           @resend-code="handleResendResetPasswordCode"
           @submit-code="handleResetPassword"
         />
-        <VerifyEmail
-          v-if="step === 5"
-          @submit-code="handleVerifyEmail"
-          @resend-code="handleResendCode"
-        />
       </template>
     </Modal>
     <div class="block w-10/12 self-end p-2">
@@ -263,16 +287,10 @@ defineComponent({ name: 'AppHeader' })
             <RouterLink to="/">Trang chủ</RouterLink>
           </div>
           <div class="nav-items">
-            <RouterLink to="/about">Giới thiệu</RouterLink>
-          </div>
-          <div class="nav-items">
             <RouterLink to="/classrooms">Lớp học</RouterLink>
           </div>
           <div class="nav-items">
             <RouterLink to="/tutors">Gia sư</RouterLink>
-          </div>
-          <div class="nav-items">
-            <RouterLink to="/test">Môn học</RouterLink>
           </div>
         </div>
 
@@ -285,20 +303,40 @@ defineComponent({ name: 'AppHeader' })
           </div>
         </div>
         <div v-else class="group z-50 flex flex-auto items-center justify-center">
-          <div
-            class="flex w-6/12 items-center justify-center gap-3 rounded-full bg-white p-2 group-hover:bg-sky-200"
-          >
+          <div class="flex w-6/12 items-center justify-center gap-3 rounded-full bg-white p-1">
             <Menu as="div" class="relative inline-block text-left">
               <div>
                 <MenuButton
-                  class="inline-flex w-full flex-auto justify-between rounded-md px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 group-hover:justify-between"
+                  v-slot="{ open }"
+                  class="group/button inline-flex w-full flex-auto justify-between gap-2 rounded-full align-middle text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 group-hover:justify-between"
                 >
-                  <font-awesome-icon :icon="['fas', 'user']" size="2xl" style="color: #050505" />
+                  <div class="inline-flex h-12 w-12 justify-center rounded-full">
+                    <font-awesome-icon
+                      :icon="['fas', 'user']"
+                      size="2xl"
+                      style="color: #050505"
+                      v-if="!userLogin?.avatar"
+                      :class="['self-center hover:ml-1', open ? 'ml-1' : '']"
+                    />
+                    <div v-else>
+                      <img
+                        :src="`${GET_IMG_API}/${userLogin?.avatar}`"
+                        alt="#"
+                        :class="[
+                          'h-full w-full rounded-full object-cover group-hover/button:ml-1',
+                          open ? 'ml-1' : ''
+                        ]"
+                      />
+                    </div>
+                  </div>
                   <font-awesome-icon
                     :icon="['fas', 'chevron-down']"
                     size="xl"
                     style="color: #050505"
-                    class="self-end"
+                    :class="[
+                      open ? 'block' : 'hidden',
+                      'mr-1 self-center group-hover/button:block'
+                    ]"
                   />
                 </MenuButton>
               </div>
@@ -317,7 +355,15 @@ defineComponent({ name: 'AppHeader' })
                   <div
                     class="grid grid-flow-row-dense justify-items-center px-1 py-1 font-medium capitalize"
                   >
-                    <p>{{ student ? student.fullName : tutor?.fullName }}</p>
+                    <p>
+                      {{
+                        userLogin
+                          ? userLogin.username
+                          : student
+                            ? student.fullName
+                            : tutor?.fullName
+                      }}
+                    </p>
                   </div>
                   <div class="px-1 py-1">
                     <MenuItem v-slot="{ active }">
@@ -342,6 +388,7 @@ defineComponent({ name: 'AppHeader' })
                           active ? 'bg-sky-500 text-white' : 'text-gray-900',
                           'group flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm'
                         ]"
+                        @click="handleGotoManager"
                       >
                         <font-awesome-icon
                           :icon="['fas', 'graduation-cap']"

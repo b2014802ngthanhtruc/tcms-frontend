@@ -6,6 +6,7 @@ import GeneralClassroomService from '@/services/classroom/general-classroom.serv
 import type { ClassRoom, QueryParams } from '@/types'
 import { getQueryParams } from '@/utils/query-param.util'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // Định nghĩa props và thiết lập giá trị mặc định
 const props = withDefaults(
@@ -23,6 +24,8 @@ const props = withDefaults(
     ]
   }
 )
+
+const router = useRouter()
 
 // Khai báo các biến state
 const classrooms = ref<ClassRoom[]>([])
@@ -53,6 +56,10 @@ const displayedClassrooms = computed(() => {
   return classrooms.value.slice(currentIndex.value, currentIndex.value + 3)
 })
 
+const handleGotoDetail = (id: string) => {
+  console.log(id)
+  router.push({ name: 'classroom-detail', params: { id } })
+}
 // Phương thức để chuyển đến classrooms tiếp theo
 const next = () => {
   if (currentIndex.value + 3 < classrooms.value.length) {
@@ -119,7 +126,11 @@ const prev = () => {
         </button>
 
         <div class="col-span-10 grid grid-cols-3 gap-3 py-4" v-if="classrooms.length > 0">
-          <ClassCard v-for="(classroom, index) in displayedClassrooms" :classroom="classroom" />
+          <ClassCard
+            v-for="(classroom, index) in displayedClassrooms"
+            :classroom="classroom"
+            @get-detail="handleGotoDetail"
+          />
         </div>
 
         <button @click="next" :disabled="currentIndex + 3 >= classrooms.length" class="next-button">

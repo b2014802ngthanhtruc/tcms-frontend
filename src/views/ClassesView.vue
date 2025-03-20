@@ -57,15 +57,34 @@ const queryString = computed(() => {
       value: ClassStatus.NEW
     })
   }
+  if (!queryParams.value.filter || queryParams.value.filter.length === 0) {
+    queryParams.value.filter = [
+      {
+        field: 'status',
+        type: FilterOperationType.Eq,
+        value: ClassStatus.NEW
+      }
+    ]
+  }
   return getQueryParams(queryParams.value)
 })
 onMounted(async () => {
   const result = await generalClassroomService.findMany(queryString.value)
   classrooms.value = result.results
   classroomsPagination.value = result
-  const resultCities = await addressService.listCities()
+  const providedQuery: QueryParams = {
+    filter: [
+      {
+        field: 'isProvided',
+        type: FilterOperationType.Eq,
+        value: true
+      }
+    ]
+  }
+  const providedQueryString = getQueryParams(providedQuery)
+  const resultCities = await addressService.listCities(providedQueryString)
   console.log('cities response', resultCities)
-  cities.value = [...resultCities]
+  cities.value = resultCities.results
   console.log('cities value ', cities.value)
 })
 
@@ -174,7 +193,9 @@ const handleGotoPage = async (offset: number) => {
 const handleNextPage = async () => {
   if (currentPage.value < totalPage.value && classroomsPagination.value.next) {
     currentPage.value = currentPage.value + 1
-    const result = await generalClassroomService.findMany(classroomsPagination.value.next)
+    const offset = (currentPage.value - 1) * pagination.value.limit
+    pagination.value.offset = offset
+    const result = await generalClassroomService.findMany(queryString.value)
     classrooms.value = result.results
     classroomsPagination.value = result
   }
@@ -183,7 +204,9 @@ const handleNextPage = async () => {
 const handlePreviousPage = async () => {
   if (currentPage.value > 1 && classroomsPagination.value.previous) {
     currentPage.value = currentPage.value - 1
-    const result = await generalClassroomService.findMany(classroomsPagination.value.previous)
+    const offset = (currentPage.value - 1) * pagination.value.limit
+    pagination.value.offset = offset
+    const result = await generalClassroomService.findMany(queryString.value)
     classrooms.value = result.results
     classroomsPagination.value = result
   }
@@ -245,7 +268,7 @@ const handleEnroll = async (id: string) => {
         isOpenFilter ? 'col-span-9 col-start-4' : 'w-full'
       ]"
     >
-      <div class="m-3 flex items-center justify-center gap-3 p-5">
+      <div class="m-3 flex w-full items-center justify-center gap-3 p-5">
         <div class="flex flex-auto" v-if="!isOpenFilter">
           <button @click="isOpenFilter = !isOpenFilter">
             <font-awesome-icon :icon="['fas', 'bars']" size="2xl" style="color: #000000" />
@@ -258,7 +281,7 @@ const handleEnroll = async (id: string) => {
           <AppSortBar :keys="sortFields" @sort="handleSort" />
         </div>
       </div>
-      <div class="grid grid-cols-4 gap-3 @6xl:grid-cols-5" v-if="classrooms.length > 0">
+      <div class="grid w-full grid-cols-4 gap-3 @6xl:grid-cols-5" v-if="classrooms.length > 0">
         <div class="w-full @container" v-for="classroom in classrooms">
           <ClassCard :classroom="classroom" @get-detail="handleGotoDetail" @enroll="handleEnroll" />
         </div>

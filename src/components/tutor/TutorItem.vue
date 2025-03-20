@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { GET_IMG_API } from '@/constants/eviroment.constant'
 import { GENDERMAP } from '@/constants/gender.constant'
 import { DEFAULT_AVATAR } from '@/constants/user.constant'
 import type { ListTutorResponse } from '@/types/tutor.type'
@@ -24,7 +25,11 @@ defineComponent({
     @click="handleGetDetail(props.tutor.id)"
   >
     <div class="mt-4 h-[134px] w-[134px]">
-      <img class="ml-2 h-full w-full rounded-full object-cover" :src="DEFAULT_AVATAR" alt="" />
+      <img
+        class="ml-2 h-full w-full rounded-full object-cover"
+        :src="`${GET_IMG_API}/${props.tutor.avatar}`"
+        alt=""
+      />
     </div>
     <div class="grid grid-flow-row-dense justify-items-center gap-2 capitalize">
       <p class="text-lg font-medium">{{ props.tutor.fullName }}</p>
@@ -35,7 +40,7 @@ defineComponent({
             <p>{{ GENDERMAP[props.tutor.gender] }}</p>
           </div>
           <div class="flex flex-auto gap-1">
-            <p class="font-medium">Bằng cấp:</p>
+            <p class="font-medium">Trình độ:</p>
             <p>{{ props.tutor.degree }}</p>
           </div>
           <div class="flex flex-auto gap-1">

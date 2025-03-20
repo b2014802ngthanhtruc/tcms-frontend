@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import RegisterForm from '@/components/auth/RegisterForm.vue'
 import StepFlow from '@/components/auth/StepFlow.vue'
-import { ref } from 'vue'
+import { inject, ref, type Ref } from 'vue'
 import VerifyEmail from '@/components/auth/VerifyEmail.vue'
 import ChooseRole from '@/components/auth/ChooseRole.vue'
 import TutorCompleteProfile from '@/components/auth/TutorCompleteProfile.vue'
@@ -12,10 +12,11 @@ import AuthGeneralService from '@/services/auth/auth-general.service'
 import type {
   RegisterRequest,
   StudentCompleteRegisterRequest,
-  TutorCompleteRegisterRequest
+  TutorCompleteRegisterRequest,
+  UserLogin
 } from '@/types'
 import AuthTutorService from '@/services/auth/auth-tutor.service'
-import { getUserIdFromLS, saveUserLoginToLS, setUserIdToLS } from '@/utils'
+import { getUserIdFromLS, getUserLoginFromLS, saveUserLoginToLS, setUserIdToLS } from '@/utils'
 import { toast } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
 import type { AxiosError } from 'axios'
@@ -26,8 +27,9 @@ const router = useRouter()
 const authService = new AuthGeneralService()
 const authTutorService = new AuthTutorService()
 const authStudentService = new AuthStudentService()
+const userLogin = inject<Ref<UserLogin | undefined>>('userLogin', ref(undefined))
 const handleReturnHome = () => {
-  router.push({ name: 'home' })
+  router.replace({ name: 'home' })
 }
 
 const handleRegister = async (value: RegisterRequest) => {
@@ -37,14 +39,14 @@ const handleRegister = async (value: RegisterRequest) => {
   console.log('user', user)
   setUserIdToLS(user.id)
   if (!user.isVerifiedEmail && user.isRegistered) {
-    toast.warning('You have not verified your email! Please verify your email!')
+    toast.warning('Bạn chưa xác thực email! Vui lòng xác thực email!')
     step.value = 2
     return
   }
 
   if (!user.isCompleteSignup && user.isRegistered) {
     await authService.resendCode(user.id)
-    toast.warning('You have not completed your profile! Please complete your profile!')
+    toast.warning('Bạn chưa hoàn thành đăng ký hồ sơ! Vui lòng hoàn thành đăng ký hồ sơ!')
     step.value = 3
     return
   }
@@ -54,7 +56,7 @@ const handleRegister = async (value: RegisterRequest) => {
       const result = await authService.register(value.email, value.password)
       step.value = 2
     } else {
-      toast.error('Email already exists!')
+      toast.error('Email đã tồn tại!')
     }
   } catch (error) {
     const err = error as AxiosError
@@ -129,12 +131,15 @@ const handleTutorCompleteProfile = async (value: TutorCompleteRegisterRequest) =
     saveUserLoginToLS({
       id: tutor.id,
       userId: userId,
+      username: `${tutor.firstName} ${tutor.lastName}`,
       isStudent: false,
-      isTutor: true
+      isTutor: true,
+      isAdmin: false,
+      avatar: tutor.avatar
     })
     step.value = 5
-
-    await router.push({ name: 'welcome' })
+    userLogin.value = getUserLoginFromLS()
+    await router.replace({ name: 'welcome' })
   } catch (error) {
     const err = error as AxiosError
     const data: any = err.response?.data
@@ -160,7 +165,7 @@ const handleTutorCompleteProfile = async (value: TutorCompleteRegisterRequest) =
       />
       <StudentCompleteProfile
         v-if="step === 4 && role === 'student'"
-        :title="'Complete Profile'"
+        :title="'Tạo hồ sơ mới'"
         @complete-student-profile="handleStudentCreateProfile"
       />
       <StudentCreateProfile

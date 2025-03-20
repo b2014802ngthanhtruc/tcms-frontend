@@ -16,7 +16,15 @@ import { computed, defineComponent, onMounted, ref } from 'vue'
 
 const generalTutorService = new GeneralTutorService()
 const addressService = new AddressService()
-
+const cityQueryParam = ref<QueryParams>({
+  filter: [
+    {
+      field: 'isProvided',
+      type: FilterOperationType.Eq,
+      value: true
+    }
+  ]
+})
 const tutors = ref<ListTutorResponse[]>([])
 const tutorsPagination = ref<Pagination<ListTutorResponse>>({
   count: 0,
@@ -124,7 +132,8 @@ const handleGotoPage = async (offset: number) => {
 const handleNextPage = async () => {
   if (currentPage.value < totalPage.value && tutorsPagination.value.next) {
     currentPage.value = currentPage.value + 1
-    const result = await generalTutorService.findMany(tutorsPagination.value.next)
+    pagination.value.offset = (currentPage.value - 1) * pagination.value.limit
+    const result = await generalTutorService.findMany(queryString.value)
     tutors.value = result.results
     tutorsPagination.value = result
   }
@@ -133,7 +142,8 @@ const handleNextPage = async () => {
 const handlePreviousPage = async () => {
   if (currentPage.value > 1 && tutorsPagination.value.previous) {
     currentPage.value = currentPage.value - 1
-    const result = await generalTutorService.findMany(tutorsPagination.value.previous)
+    pagination.value.offset = (currentPage.value - 1) * pagination.value.limit
+    const result = await generalTutorService.findMany(queryString.value)
     tutors.value = result.results
     tutorsPagination.value = result
   }
@@ -148,9 +158,10 @@ onMounted(async () => {
   tutors.value = result.results
   tutorsPagination.value = result
 
-  const resultCities = await addressService.listCities()
+  const cityQueryString = getQueryParams(cityQueryParam.value)
+  const resultCities = await addressService.listCities(cityQueryString)
   console.log('cities response', resultCities)
-  cities.value = [...resultCities]
+  cities.value = resultCities.results
 })
 
 defineComponent({ name: 'TutorView' })
@@ -176,7 +187,7 @@ defineComponent({ name: 'TutorView' })
         isOpenFilter ? 'col-span-9 col-start-4' : 'w-full'
       ]"
     >
-      <div class="m-3 flex items-center justify-center gap-3 p-5">
+      <div class="m-3 flex w-full items-center justify-center gap-3 p-5">
         <div class="flex flex-auto" v-if="!isOpenFilter">
           <button @click="isOpenFilter = !isOpenFilter">
             <font-awesome-icon :icon="['fas', 'bars']" size="2xl" style="color: #000000" />
@@ -189,7 +200,7 @@ defineComponent({ name: 'TutorView' })
           <AppSortBar :keys="sortFields" @sort="handleSort" />
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid w-full grid-cols-2 gap-3">
         <div class="w-full @container" v-for="tutor in tutors">
           <TutorItem :tutor="tutor" @get-detail="handleGetDetail" />
         </div>

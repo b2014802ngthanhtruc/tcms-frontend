@@ -7,6 +7,7 @@ import {
   SCOPEMAP,
   SESSIONMAP
 } from '@/constants/class.constant'
+import { GET_IMG_API } from '@/constants/eviroment.constant'
 import { GENDERMAP } from '@/constants/gender.constant'
 import { DEFAULT_AVATAR } from '@/constants/user.constant'
 import { ButtonStatus, ButtonType, PaymentFrequency } from '@/enums'
@@ -17,7 +18,7 @@ import TutorClassroomService from '@/services/classroom/tutor-classroom.service'
 import type { ClassResponse, ClassRoom, UserLogin } from '@/types'
 import { checkIsLogin, getUserLoginFromLS, toCurrency, toNormalize } from '@/utils'
 import type { AxiosError } from 'axios'
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, inject, onMounted, ref, type Ref } from 'vue'
 import { toast } from 'vue3-toastify'
 
 const generalClassroomService = new GeneralClassroomService()
@@ -27,25 +28,24 @@ const tutorClassroomService = new TutorClassroomService()
 const props = defineProps<{ id: string }>()
 
 const classRoom = ref<ClassResponse | null>(null)
-const user = ref<UserLogin>()
+const user = inject<Ref<UserLogin | undefined>>('userLogin')
 
 onMounted(async () => {
   console.log('id', props.id)
   classRoom.value = await generalClassroomService.findOne(props.id)
   console.log('classRoom', classRoom.value)
-  user.value = getUserLoginFromLS()
 })
 
 const handleEnroll = async () => {
   const isLoggedIn = checkIsLogin()
   if (!isLoggedIn) {
-    toast.warning('You need to be logged in to enroll in this class!')
+    toast.warning('Bạn cần đăng nhập để thực hiện chức năng này!')
     return
   }
-  if (user.value && user.value.isStudent) {
+  if (user && user.value && user.value.isStudent) {
     try {
       await studentClassroomService.enroll(props.id)
-      toast.success('Enroll successfully!')
+      toast.success('Đăng ký lớp học thành công!')
       classRoom.value = await generalClassroomService.findOne(props.id)
     } catch (error) {
       const err = error as AxiosError
@@ -53,10 +53,10 @@ const handleEnroll = async () => {
       toast.error(data.message)
     }
   }
-  if (user.value && user.value.isTutor) {
+  if (user && user.value && user.value.isTutor) {
     try {
       await tutorClassroomService.enroll(props.id)
-      toast.success('Enroll successfully!')
+      toast.success('Đăng ký nhận lớp thành công!')
       classRoom.value = await generalClassroomService.findOne(props.id)
     } catch (error) {
       const err = error as AxiosError
@@ -133,7 +133,9 @@ const handleEnroll = async () => {
               class="grid grid-cols-2 gap-3 px-5 capitalize"
             >
               <p>{{ DAYOFWEEKMAP[schedule.dow] }}</p>
-              <p>{{ SESSIONMAP[schedule.time] }}</p>
+              <p>
+                {{ SESSIONMAP[schedule.session] }}: {{ schedule.startAt }} - {{ schedule.endAt }}
+              </p>
             </td>
           </tr>
           <tr class="grid grid-flow-col-dense justify-items-start gap-2">
@@ -160,7 +162,13 @@ const handleEnroll = async () => {
         <h1>Thông tin gia sư</h1>
       </div>
       <div class="grid grid-flow-col-dense self-center">
-        <img :src="classRoom.tutor.avatar ?? DEFAULT_AVATAR" alt="" class="h-60 w-60" />
+        <img
+          :src="
+            classRoom.tutor.avatar ? `${GET_IMG_API}/${classRoom.tutor.avatar}` : DEFAULT_AVATAR
+          "
+          alt=""
+          class="h-60 w-60 rounded-full object-cover"
+        />
         <table class="mx-auto grid w-full grid-cols-2 justify-items-center p-3">
           <tbody class="body-table-col">
             <tr class="body-table-col-tr">
@@ -186,7 +194,7 @@ const handleEnroll = async () => {
           </tbody>
           <tbody class="body-table-col">
             <tr class="body-table-col-tr">
-              <th>Bằng cấp:</th>
+              <th>Trình độ:</th>
               <td class="capitalize">{{ classRoom.tutor.educationalQualification.degree }}</td>
             </tr>
             <tr class="body-table-col-tr">
@@ -210,11 +218,11 @@ const handleEnroll = async () => {
       <p>Lớp học này hiện chưa có gia sư đăng ký</p>
     </div>
     <div class="mt-3 grid grid-flow-col p-4" v-if="user?.isStudent || classRoom?.tutorId === null">
-      <div class="mx-auto w-6/12">
+      <div class="mx-auto flex-auto">
         <AppButton
           :status="ButtonStatus.SUCCESS"
           :type="ButtonType.FULL_FILL"
-          :content="'Enroll'"
+          :content="'Đăng ký'"
           @click="handleEnroll"
         />
       </div>

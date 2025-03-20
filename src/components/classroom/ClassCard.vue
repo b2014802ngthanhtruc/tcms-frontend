@@ -75,15 +75,9 @@ defineComponent({ name: 'ClassCard' })
     </dl>
     <div class="card-footer">
       <AppButton
-        :status="ButtonStatus.SUCCESS"
-        :type="ButtonType.FULL_FILL"
-        :content="'Enroll'"
-        @click="handleEnroll"
-      />
-      <AppButton
         :status="ButtonStatus.PRIMARY"
         :type="ButtonType.FULL_FILL"
-        :content="'View details'"
+        :content="'Xem chi tiết'"
         @click="handleGetDetail(props.classroom.id)"
       />
     </div>

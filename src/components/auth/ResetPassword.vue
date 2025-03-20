@@ -9,6 +9,7 @@ import logo from '@/assets/images/Logo 1.svg'
 import type { ResetPasswordRequest } from '@/types'
 
 // Variables
+const props = defineProps<{ isAdmin?: boolean }>()
 const emit = defineEmits(['submit-code', 'resend-code'])
 const codeArray = ref(new Array(6).fill(''))
 const codeIndex = ref(0)
@@ -25,35 +26,29 @@ const ResetPasswordSchema = yup.object({
       yup
         .string()
         .trim()
-        .length(1, 'Code must be a single digit')
-        .matches(/^[0-9]$/, 'Code is invalid') // Enforce numeric values
-        .required('Code is required')
+        .max(1, 'Mã xác thực chỉ được nhập 1 ký tự mỗi ô')
+
+        .required('Mã xác thực là bắt buộc')
     )
-    .min(6, 'Code must be exactly 6 digits')
-    .max(6, 'Code must be exactly 6 digits')
-    .required('Code is required'),
-  password: yup
-    .string()
-    .trim()
-    .min(8, 'Password must be at least 8 characters')
-    .required('Password is required')
+    .required('Mã xác thực là bắt buộc'),
+  password: yup.string().trim().min(8, 'Mật khẩu phải nhất 8 ký tự').required('Hãy nhập mật khẩu')
 })
 
 // Computed
 
-defineRule('validateCode', (value: string) => {
+const validataCode = (value: string) => {
   console.log('value', value)
   if (value.length === 0) {
     errorMessage.value = 'Verification code is required.'
-    return 'Verification code is required.'
+    return false
   }
   if (value.length > 1) {
     errorMessage.value = 'Verification code must be a single digit.'
-    return 'Code must be a single digit'
+    return false
   }
   if (RegExp(/^[0-9]+$/).test(value) === false) {
     errorMessage.value = 'Verification code must be a number character.'
-    return 'Code must be a number character'
+    return false
   }
   const emptyIndex = codeArray.value.findIndex((item) => item === '')
   if (emptyIndex >= 0 && emptyIndex < 5) {
@@ -62,7 +57,7 @@ defineRule('validateCode', (value: string) => {
   }
   errorMessage.value = ''
   return true
-})
+}
 
 // Methods
 function resendCode() {
@@ -77,16 +72,9 @@ const handleResetPassword = async (values: any) => {
   resetPasswordData.value.code = resultCode
   resetPasswordData.value.password = values.password
 
-  try {
-    const isValid = await ResetPasswordSchema.validate(resetPasswordData.value)
-    if (isValid) {
-      console.log('reset-password', resetPasswordData.value)
-      emit('submit-code', resetPasswordData.value)
-    }
-  } catch (validationError) {
-    console.log(validationError)
-    errorMessage.value = (validationError as any).message
-  }
+  console.log('reset-password', resetPasswordData.value)
+
+  emit('submit-code', resetPasswordData.value)
 }
 
 function focusNext(event: Event, index: number) {
@@ -129,9 +117,11 @@ defineComponent({ name: 'VerifyEmail' })
 </script>
 <template>
   <div
-    :style="{
-      backgroundImage: `url(${bgLogin})`
-    }"
+    :style="
+      !isAdmin && {
+        backgroundImage: `url(${bgLogin})`
+      }
+    "
     class="flex h-[700px] w-[500px] items-center justify-center rounded-sm bg-cover bg-center bg-no-repeat p-[35px]"
   >
     <div class="flex h-[600px] w-[400px] flex-col items-center rounded-[4px] bg-[#D9D9D9]/50">
@@ -160,7 +150,6 @@ defineComponent({ name: 'VerifyEmail' })
                 v-slot="{ field, meta }"
                 :key="index"
                 :name="`code[${index - 1}]`"
-                rules="validateCode"
                 v-model="codeArray[index - 1]"
                 :validate-on-input="true"
                 :validate-on-blur="true"
@@ -177,7 +166,8 @@ defineComponent({ name: 'VerifyEmail' })
                 />
               </Field>
             </div>
-            <span class="text-red-500" v-if="errors">{{ errorMessage }}</span>
+            <ErrorMessage :name="`code[${codeIndex}]`" class="text-sm text-red-500" />
+            <span class="text-red-500" v-if="errorMessage.length > 0">{{ errorMessage }}</span>
           </div>
           <div class="grid w-full grid-flow-row-dense justify-items-start gap-3 px-3">
             <label for="password" class="text-[20px]">Mật khẩu mới</label>

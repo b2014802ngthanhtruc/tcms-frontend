@@ -1,6 +1,6 @@
 import type { AxiosInstance } from 'axios'
 import { API_URL, AUTH_GENERAL_API } from '@/constants/eviroment.constant'
-import type { GetStartedResponse } from '@/types'
+import type { ChangePasswordRequest, GetStartedResponse } from '@/types'
 import Http from '../api/api.service'
 
 class AuthGeneralService {
@@ -46,6 +46,10 @@ class AuthGeneralService {
       await this.http.post(`${AUTH_GENERAL_API}/reset-password`, { email, code, password })
     ).data
     return response
+  }
+
+  async changePassword(data: ChangePasswordRequest) {
+    await this.http.post(`${AUTH_GENERAL_API}/change-password`, data)
   }
 }
 

@@ -7,7 +7,7 @@ import type { Tutor } from './tutor.type'
 export type ClassRoom = {
   id: string
   subjectId: string
-  tutorId: string
+  tutorId: string | null
 
   className: string
   scope: ScopeClass
@@ -28,10 +28,12 @@ export type ClassRoom = {
   updatedAt: Date | null
   deletedAt: Date | null
 
+  documents: ClassDocument[]
   subject: Subject
   location: Address | null
   schedules: Schedule[]
   students: Student[]
+  notification: ClassNotification[]
   tutor: Tutor
 }
 
@@ -40,7 +42,9 @@ export type Schedule = {
   classId: string
 
   dow: DayOfWeek
-  time: string
+  session: string
+  startAt: string
+  endAt: string
   duration: number
 
   createdAt: Date
@@ -48,6 +52,54 @@ export type Schedule = {
   deletedAt: Date | null
 }
 
+export type ClassNotification = {
+  id: string
+  classId: string
+
+  title: string
+  content: string
+
+  createdAt: Date
+  updatedAt: Date | null
+  deletedAt: Date | null
+}
+
+export type ClassDocument = {
+  id: string
+  classId: string
+
+  name: string
+  docUrl: string
+
+  createdAt: Date
+  updatedAt: Date | null
+  deletedAt: Date | null
+}
+
+export type AddClassDocument = {
+  name: string
+  docUrl: string
+}
+
 export type ClassResponse = Omit<ClassRoom, 'students'> & {
   studentOfClasses: Student[]
 }
+
+export type CreateClassRoom = Omit<
+  ClassRoom,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'deletedAt'
+  | 'tutor'
+  | 'students'
+  | 'subject'
+  | 'totalDays'
+  | 'status'
+>
+
+export type UpdateClassRoom = Partial<CreateClassRoom>
+
+export type CreateClassNotification = Pick<ClassNotification, 'title' | 'content'>
+
+export type UpdateClassNotification = Partial<CreateClassNotification>

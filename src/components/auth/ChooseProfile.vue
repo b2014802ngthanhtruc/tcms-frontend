@@ -11,7 +11,8 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
 const emits = defineEmits([
   'choose-student-profile',
   'choose-tutor-profile',
-  'student-create-profile'
+  'student-create-profile',
+  'tutor-create-profile'
 ])
 
 const props = defineProps<{ user: ChooseProfileResponse }>()
@@ -30,6 +31,10 @@ const handleChooseTutorProfile = (id: string) => {
 
 const handleStudentCreateProfile = () => {
   emits('student-create-profile')
+}
+
+const handleTutorCreateProfile = () => {
+  emits('tutor-create-profile')
 }
 defineComponent({ name: 'ChooseProfile' })
 </script>
@@ -60,7 +65,7 @@ defineComponent({ name: 'ChooseProfile' })
               <ListboxButton
                 class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm"
               >
-                <span class="block truncate capitalize">{{ 'Select a student' }}</span>
+                <span class="block truncate capitalize">Chọn học sinh</span>
                 <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                   <ChevronUpDownIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
                 </span>
@@ -108,7 +113,6 @@ defineComponent({ name: 'ChooseProfile' })
             class="my-4 flex flex-auto justify-center rounded-lg border border-gray-300 bg-gray-200 p-3"
           >
             <button
-              :value="userProfile.tutor.id"
               @click="handleStudentCreateProfile"
               type="button"
               class="mt-1 w-full rounded-[10px] bg-white p-3 hover:bg-sky-200"
@@ -120,6 +124,7 @@ defineComponent({ name: 'ChooseProfile' })
         <div class="w-full pt-5">
           <label for="=tutor" class="block text-[20px]">Gia sư</label>
           <button
+            v-if="userProfile.tutor"
             :value="userProfile.tutor.id"
             @click="handleChooseTutorProfile(userProfile.tutor.id)"
             type="button"
@@ -127,6 +132,18 @@ defineComponent({ name: 'ChooseProfile' })
           >
             <p class="self-start">{{ userProfile.tutor.fullName }}</p>
           </button>
+          <div
+            v-else
+            class="my-4 flex flex-auto justify-center rounded-lg border border-gray-300 bg-gray-200 p-3"
+          >
+            <button
+              @click="handleTutorCreateProfile"
+              type="button"
+              class="mt-1 w-full rounded-[10px] bg-white p-3 hover:bg-sky-200"
+            >
+              <p class="self-start">Không có hồ sơ gia sư nào. Tạo mới</p>
+            </button>
+          </div>
         </div>
       </form>
     </div>

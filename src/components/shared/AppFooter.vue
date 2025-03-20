@@ -8,26 +8,36 @@ defineComponent({ name: 'AppFooter' })
   <footer class="flex-auto divide-y-2 bg-white py-4 align-middle">
     <div class="grid grid-flow-col-dense justify-around gap-4">
       <ul class="footer-groups">
-        <li class="text-lg font-medium"><h5>Contact information</h5></li>
+        <li class="text-lg font-medium"><h5>Thông tin liên lạc</h5></li>
         <li class="footer-group-items"><a href="#">Email: daybreak@mailinator.com</a></li>
         <li class="footer-group-items"><a href="#">Phone: +84 123 456 789</a></li>
         <li class="footer-group-items">
-          <a href="#">Address: 123, Hung Loi, Ninh Kieu, Can Tho</a>
+          <a href="#">Địa chỉ: 123, Hung Loi, Ninh Kieu, Can Tho</a>
         </li>
       </ul>
       <ul class="footer-groups">
-        <li class="text-lg font-medium"><h5>Quick links</h5></li>
-        <li class="footer-group-items"><a href="#">Home</a></li>
-        <li class="footer-group-items"><a href="#">About</a></li>
-        <li class="footer-group-items"><a href="#">Class</a></li>
-        <li class="footer-group-items"><a href="#">Tutor</a></li>
-        <li class="footer-group-items"><a href="#">Subject</a></li>
+        <li class="text-lg font-medium"><h5>Danh mục</h5></li>
+        <li class="footer-group-items"><a href="#">Trang chủ</a></li>
+        <li class="footer-group-items"><a href="#">Lớp học</a></li>
+        <li class="footer-group-items"><a href="#">Gia sư</a></li>
       </ul>
       <ul class="footer-groups">
-        <li class="text-lg font-medium"><h5>Social media</h5></li>
-        <li class="footer-group-items"><font-awesome-icon :icon="['fab', 'facebook']" style="color: #225bbf;" /> <a href="#">Facebook</a></li>
-        <li class="footer-group-items"><a href="#"><font-awesome-icon :icon="['fab', 'square-instagram']" style="color: #225bbf;"  /> Instagram</a></li>
-        <li class="footer-group-items"><a href="#"><font-awesome-icon :icon="['fab', 'twitter']" style="color: #225bbf;" /> Twitter</a></li>
+        <li class="text-lg font-medium"><h5>Liên kết</h5></li>
+        <li class="footer-group-items">
+          <font-awesome-icon :icon="['fab', 'facebook']" style="color: #225bbf" />
+          <a href="#">Facebook</a>
+        </li>
+        <li class="footer-group-items">
+          <a href="#"
+            ><font-awesome-icon :icon="['fab', 'square-instagram']" style="color: #225bbf" />
+            Instagram</a
+          >
+        </li>
+        <li class="footer-group-items">
+          <a href="#"
+            ><font-awesome-icon :icon="['fab', 'twitter']" style="color: #225bbf" /> Twitter</a
+          >
+        </li>
       </ul>
     </div>
     <div class="mt-4 block py-4 align-middle">

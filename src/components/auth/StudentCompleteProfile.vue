@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computed, defineComponent, onMounted, ref } from 'vue'
+import { computed, defineComponent, onMounted, ref, watch } from 'vue'
 import { Form, Field, ErrorMessage } from 'vee-validate'
 import { ButtonStatus, ButtonType, ClassLevel, Gender, Grade } from '@/enums'
 import AppButton from '../shared/AppButton.vue'
 import * as yup from 'yup'
-import type { CityResponse, District, StudentCompleteRegisterRequest, Ward } from '@/types'
-import { getUserIdFromLS, toNormalize } from '@/utils'
+import type {
+  CityResponse,
+  District,
+  QueryParams,
+  StudentCompleteRegisterRequest,
+  Ward
+} from '@/types'
+import { getQueryParams, getUserIdFromLS, toNormalize } from '@/utils'
 import AddressService from '@/services/address/address.service'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
@@ -25,13 +31,29 @@ import {
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
 import { CLASSLEVELMAP, GRADEMAP } from '@/constants/class.constant'
 import { GENDERMAP } from '@/constants/gender.constant'
+import { FilterOperationType } from '@chax-at/prisma-filter-common'
+import VueDatePicker from '@vuepic/vue-datepicker'
 
 const addressService = new AddressService()
 const props = defineProps<{
   title: string
 }>()
 
+const format = (date: Date) => {
+  const day = date.getDate()
+  const month = date.getMonth() + 1
+  const year = date.getFullYear()
+
+  return `${day}/${month}/${year}`
+}
 const grades = ref(Object.values(Grade))
+const query = ref<QueryParams>({
+  limit: 30,
+  offset: 0
+})
+
+const selectedClassLevel = ref<string>('')
+const isFirst = ref(true)
 
 const classLevels = ref(Object.values(ClassLevel))
 const queryClassLevel = ref<string>('')
@@ -47,11 +69,20 @@ const filteredClassLevel = computed(() => {
 })
 const cities = ref<CityResponse[]>([])
 const selectedCityId = ref<string>('')
-const selectedCity = computed<CityResponse>(
-  () => cities.value.find((c) => c.id === selectedCityId.value)!
-)
+const selectedCity = computed<CityResponse>(() => {
+  const city = cities.value.find((c) => c.id === selectedCityId.value)
+  if (!city) {
+    const selectFilterCity = filteredCity.value.find((c) => c.id === selectedCityId.value)
+    if (selectFilterCity) cities.value.push(selectFilterCity)
+    return selectFilterCity!
+  }
+  return city
+})
 const queryCityName = ref<string>('')
-const filteredCity = computed<CityResponse[]>(() => {
+const filteredCity = ref<CityResponse[]>([])
+
+watch(queryCityName, async () => {
+  console.log(queryCityName.value)
   const result =
     queryCityName.value === ''
       ? cities.value
@@ -61,7 +92,16 @@ const filteredCity = computed<CityResponse[]>(() => {
             .replace(/\s+/g, '')
             .includes(queryCityName.value.toLowerCase().replace(/\s+/g, ''))
         )
-  return result
+  filteredCity.value = result
+  if (filteredCity.value.length === 0 && queryCityName.value !== '') {
+    const searchQuery: QueryParams = {
+      ...query.value,
+      filter: [{ field: 'name', type: FilterOperationType.IContains, value: queryCityName.value }]
+    }
+    const searchQueryString = getQueryParams(searchQuery)
+    const searchCities = await addressService.listCities(searchQueryString)
+    filteredCity.value = searchCities.results
+  }
 })
 const districts = computed<District[]>(() => {
   const items: District[] = []
@@ -117,26 +157,26 @@ const emit = defineEmits(['completeStudentProfile'])
 const StudentRegisterSchema = yup.object({
   firstName: yup
     .string()
-    .required('First name is required')
-    .test('is-valid-name', 'First name is invalid', (value) =>
+    .required('Hãy nhập tên')
+    .test('is-valid-name', 'Tên phải là chữ cái hoa hoặc thường', (value) =>
       RegExp(/^[\p{L} \s]+$/u).test(value)
     ),
   lastName: yup
     .string()
-    .required('Last name is required')
-    .test('is-valid-name', 'First name is invalid', (value) =>
+    .required('Hãy nhập họ')
+    .test('is-valid-name', 'Họ phải là chữ cái hoa hoặc thường', (value) =>
       RegExp(/^[\p{L} \s]+$/u).test(value)
     ),
   phone: yup
     .string()
-    .required('Phone is required')
-    .test('is-valid-phone', 'Phone number is invalid', (value) => {
+    .required('Hãy nhập số điện thoại')
+    .test('is-valid-phone', 'Số điện thoại không hợp lệ', (value) => {
       return isValidPhoneNumber(value as string)
     }),
-  gender: yup.string().required('Gender is required'),
+  gender: yup.string().required('Hãy chọn giới tính'),
   dob: yup
     .date()
-    .required('Date of birth is required')
+    .required('Hãy nhập ngày sinh')
     .transform((value) => new Date(value)),
   parentName: yup
     .string()
@@ -146,16 +186,16 @@ const StudentRegisterSchema = yup.object({
       }
       return value
     })
-    .test('is-valid-name', 'First name is invalid', (value) =>
+    .test('is-valid-name', 'Họ tên cha mẹ phải là chữ cái hoa hoặc thường', (value) =>
       value ? RegExp(/^[\p{L} \s]+$/u).test(value) : true
     )
     .optional(),
-  class: yup.string().required('Class is required'),
+  class: yup.string().required('Hãy chọn lớp'),
   address: yup.object({
-    address: yup.string().required('Address is required'),
-    city: yup.string().required('City is required'),
-    district: yup.string().required('District is required'),
-    ward: yup.string().required('Ward is required')
+    address: yup.string().required('Hãy nhập địa chỉ'),
+    city: yup.string().required('Hãy chọn tỉnh/thành phố'),
+    district: yup.string().required('Hãy chọn quận/huyện'),
+    ward: yup.string().required('Hãy chọn xã/phường')
   })
 })
 
@@ -177,16 +217,12 @@ const handleStudentCompleteProfile = (value: any) => {
   emit('completeStudentProfile', studentRegisterData)
 }
 
-const handleSelectCity = (cityId: string) => {
-  selectedCityId.value = cityId
-}
-
-const handleSelectDistrict = (districtId: string) => {
-  selectedDistrictId.value = districtId
-}
-
 onMounted(async () => {
-  cities.value = await addressService.listCities()
+  console.log('query', query.value)
+  const defaultQuery = getQueryParams(query.value)
+  const defaultCities = await addressService.listCities(defaultQuery)
+  cities.value = defaultCities.results
+  filteredCity.value = defaultCities.results
 })
 
 defineComponent({ name: 'StudentCompleteProfile' })
@@ -244,8 +280,13 @@ defineComponent({ name: 'StudentCompleteProfile' })
         <!-- Phone -->
         <div class="form-field">
           <label for="phone" class="form-label">Số điện thoại</label>
-          <Field name="phone" v-slot="{ field, meta }" :validate-on-input="true">
-            <vue-tel-input v-bind="field"></vue-tel-input>
+          <Field
+            name="phone"
+            v-slot="{ field, meta }"
+            :validate-on-input="true"
+            :validate-on-model-update="false"
+          >
+            <vue-tel-input v-model="field.value" v-bind="field"></vue-tel-input>
           </Field>
           <ErrorMessage name="phone" class="text-sm text-red-500" />
         </div>
@@ -253,16 +294,13 @@ defineComponent({ name: 'StudentCompleteProfile' })
         <div class="form-field">
           <label for="" class="form-label">Ngày sinh</label>
           <Field name="dob" v-slot="{ field, meta }" :validate-on-input="true">
-            <input
+            <VueDatePicker
+              mode="date"
+              v-model="field.value"
               v-bind="field"
-              type="date"
-              :class="[
-                'form-input',
-                meta.valid && meta.touched
-                  ? 'border-green-500 focus:caret-inherit'
-                  : 'border-gray-300',
-                !meta.valid && meta.touched ? 'border-red-500' : ''
-              ]"
+              :format="format"
+              :enable-time-picker="false"
+              :auto-apply="true"
               placeholder="Ngày sinh"
             />
           </Field>
@@ -297,7 +335,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm"
                 >
                   <span class="block truncate capitalize">{{
-                    field.value ?? 'Chọn giới tính'
+                    GENDERMAP[field.value] ?? 'Chọn giới tính'
                   }}</span>
                   <span
                     class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
@@ -399,7 +437,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
         </div>
         <!-- Class -->
         <div class="form-field">
-          <label for="" class="form-label">Class</label>
+          <label for="class" class="form-label">Lớp</label>
           <Field
             name="class"
             v-slot="{ field, meta }"
@@ -407,7 +445,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
             :validate-on-blur="true"
             :validate-on-change="true"
           >
-            <Combobox v-bind="field">
+            <Combobox v-model="selectedClassLevel" v-bind="field">
               <div class="relative mt-1">
                 <div
                   class="relative w-full cursor-default overflow-hidden rounded-lg border border-gray-300 bg-white text-left shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm"
@@ -415,7 +453,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm capitalize leading-5 text-gray-900 focus:ring-0"
                     :display-value="
-                      (classLevel) => toNormalize(CLASSLEVELMAP[field.value]) ?? 'Chọn một lớp'
+                      (classLevel) => CLASSLEVELMAP[selectedClassLevel] || 'Chọn một lớp'
                     "
                     @change="queryClassLevel = $event.target.value"
                   />
@@ -436,7 +474,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredClassLevel.length === 0 && queryClassLevel !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Không tìm thấy
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -515,7 +553,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(selectedCityId) => selectedCity?.name || 'Select a city'"
+                    :display-value="(selectedCityId) => selectedCity?.name || 'Chọn tỉnh/thành phố'"
                     @change="queryCityName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -535,7 +573,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredCity.length === 0 && queryCityName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Không tìm thấy
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -591,7 +629,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(se) => selectedDistrict?.name || 'Select a district'"
+                    :display-value="(se) => selectedDistrict?.name || 'Chọn quận/huyện'"
                     @change="queryDistrictName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -611,7 +649,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredDistrict.length === 0 && queryDistrictName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Không tìm thấy
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -647,7 +685,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Vui lòng chọn Tỉnh/Thành phố trước</p>
+            <p v-else class="text-sm text-gray-500">Vui lòng chọn Tỉnh/Thành phố trước</p>
           </Field>
           <ErrorMessage name="address.district" class="text-sm text-red-500" />
         </div>
@@ -668,7 +706,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 >
                   <ComboboxInput
                     class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                    :display-value="(w) => selectedWard?.name || 'Select a ward'"
+                    :display-value="(w) => selectedWard?.name || 'Chọn xã/phường'"
                     @change="queryWardName = $event.target.value"
                   />
                   <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -688,7 +726,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                       v-if="filteredWard.length === 0 && queryWardName !== ''"
                       class="relative cursor-default select-none px-4 py-2 text-gray-700"
                     >
-                      Không tìm thấy
+                      Không tìm thấy.
                     </div>
 
                     <ComboboxOption
@@ -724,7 +762,7 @@ defineComponent({ name: 'StudentCompleteProfile' })
                 </TransitionRoot>
               </div>
             </Combobox>
-            <p v-else>Vui lòng chọn Quận/Huyện trước</p>
+            <p v-else class="text-sm text-gray-500">Vui lòng chọn Quận/Huyện trước</p>
           </Field>
           <ErrorMessage name="address.ward" class="text-sm text-red-500" />
         </div>

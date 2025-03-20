@@ -1,4 +1,5 @@
 import type { AxiosInstance } from 'axios'
+import axios from 'axios'
 import { API_URL, UPLOAD_API } from '@/constants/eviroment.constant'
 import type { UploadType } from '@/types'
 import Http from '../api/api.service'
@@ -14,11 +15,9 @@ class UploadService {
   }
 
   async uploadFile(url: string, file: File) {
-    const uploadHttp = new Http(url).getInstance()
-    const headers = {
-      'Content-Type': file.type // Đảm bảo header này được cấu hình
-    }
-    return await uploadHttp.put('', file, { headers })
+    const uploadHttp = await axios.put(url, file, { headers: { 'Content-Type': file.type } })
+
+    return uploadHttp
   }
 }
 export default UploadService

@@ -9,7 +9,7 @@
   //   }
   // ],
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "**/*.cjs"],
+  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "**/*.cjs", "vueform.config.ts"],
   "exclude": ["src/**/__tests__/*", "*.cjs", "*.config.*"],
   "compilerOptions": {
     "composite": true,
@@ -20,7 +20,11 @@
       "@/*": ["./src/*"],
       "@/types/*": ["./src/types/*"],
       "@/ultils/*": ["./src/utils/*"],
-      "@/services/*": ["./src/services/*"]
+      "@/services/*": ["./src/services/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/views/*": ["./src/views/*"],
+      "@/assets/*": ["./src/assets/*"]
     }
   }
 }

@@ -7,10 +7,11 @@ import { ButtonStatus, ButtonType } from '@/enums'
 import { ErrorMessage, Field, Form } from 'vee-validate'
 import * as yup from 'yup'
 
+const props = defineProps<{ isAdmin?: boolean }>()
 const emits = defineEmits(['forgot-password', 'return-login'])
 
 const forgotPasswordSchema = yup.object({
-  email: yup.string().email('Invalid email address').required('Email is required')
+  email: yup.string().email('Email không hợp lệ').required('Vui lòng nhập email')
 })
 
 const forgotPassword = (value: any) => {
@@ -27,9 +28,11 @@ defineComponent({ name: 'ForgotPassword' })
 </script>
 <template>
   <div
-    :style="{
-      backgroundImage: `url(${bgLogin})`
-    }"
+    :style="
+      !isAdmin && {
+        backgroundImage: `url(${bgLogin})`
+      }
+    "
     class="flex h-[700px] w-[500px] items-center justify-center rounded-sm bg-cover bg-center bg-no-repeat p-[35px]"
   >
     <div class="flex h-[600px] w-[400px] flex-col items-center rounded-[4px] bg-[#D9D9D9]/50">
@@ -57,7 +60,9 @@ defineComponent({ name: 'ForgotPassword' })
 
         <div class="mt-2 flex w-full items-center justify-between">
           <a @click="returnLogin" href="#" class="text-[13px]">Đăng nhập</a>
-          <RouterLink to="/auth/general/register" class="text-[13px] underline">Đăng ký</RouterLink>
+          <RouterLink to="/auth/general/register" class="text-[13px] underline" v-if="!isAdmin"
+            >Đăng ký</RouterLink
+          >
         </div>
         <div class="flex w-full items-center justify-between py-8">
           <AppButton

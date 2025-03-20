@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { size } from '@vueform/vueform'
 import { defineComponent, ref } from 'vue'
 
 const emits = defineEmits(['search'])
@@ -8,6 +9,11 @@ const handleSearch = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
     emits('search', searchValue)
   }
+}
+
+const handleClear = () => {
+  searchValue.value = ''
+  emits('search', searchValue)
 }
 
 defineComponent({ name: 'AppSearchBar' })
@@ -20,10 +26,11 @@ defineComponent({ name: 'AppSearchBar' })
       <div class="grid h-full w-12 place-items-center border-r-2 border-gray-300 text-gray-300">
         <svg
           xmlns="@assets/images/Search.svg"
-          class="h-6 w-6"
+          class="h-6 w-6 cursor-pointer"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          @click="emits('search', searchValue)"
         >
           <path
             stroke-linecap="round"
@@ -43,6 +50,9 @@ defineComponent({ name: 'AppSearchBar' })
         required
         @keydown="handleSearch($event)"
       />
+      <div class="cursor-pointer p-3" @click="handleClear">
+        <font-awesome-icon :icon="['fas', 'xmark']" size="lg" style="color: #b6b7b9" />
+      </div>
     </div>
   </div>
 </template>
