@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, defineComponent, onMounted, ref } from 'vue'
-import type { SelectItems } from '../classroom/ClassForm.vue'
 import {
   Listbox,
   ListboxButton,
@@ -9,6 +8,8 @@ import {
   ListboxLabel
 } from '@headlessui/vue'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid'
+
+export type SelectItems = { value: string; label: string }
 
 const props = defineProps<{ list: SelectItems[]; listLable: string }>()
 const seletedValue = ref<string>('')

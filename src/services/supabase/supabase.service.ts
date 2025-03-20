@@ -1,4 +1,4 @@
-import type { CreateProfile } from '@/types/supabase.type'
+import type { CreateProfile } from '@/types'
 import { SupabaseClient, createClient } from '@supabase/supabase-js'
 
 class SupabaseService {
@@ -32,6 +32,11 @@ class SupabaseService {
 
   async getInstance(): Promise<SupabaseClient> {
     return await this.supabase
+  }
+
+  async updateMetadata() {
+    const response = await this.supabase.auth.updateUser({ data: { businessId: 'uuid' } })
+    return response
   }
 }
 
