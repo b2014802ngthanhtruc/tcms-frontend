@@ -105,7 +105,9 @@ defineComponent({ name: 'RegisterForm' })
 
       <div class="form-footer">
         <p class="justify-self-end">
-          Đã có tài khoản? <a href="#" class="text-indigo-500">Đăng nhập</a>
+          <<<<<<< HEAD Đã có tài khoản? <a href="#" class="text-indigo-500">Đăng nhập</a> =======
+          Bạn đã có tài khoản? <a href="#" class="text-indigo-500">Đăng nhập</a>
+          >>>>>>> bd982731ff8ff80085225bcf44e272c89dbe07e2
         </p>
 
         <div class="flex w-8/12 flex-auto justify-center justify-self-center">

@@ -437,7 +437,11 @@ defineComponent({ name: 'StudentCompleteProfile' })
         </div>
         <!-- Class -->
         <div class="form-field">
+          <<<<<<< HEAD
           <label for="class" class="form-label">Lớp</label>
+          =======
+          <label for="" class="form-label">Lớp</label>
+          >>>>>>> bd982731ff8ff80085225bcf44e272c89dbe07e2
           <Field
             name="class"
             v-slot="{ field, meta }"
